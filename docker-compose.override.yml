@@ -1,0 +1,23 @@
+version: '3.4'
+
+services:
+  testingsystemservice:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development  
+
+  compilerservicesorchestrator:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  reflectiontesterservice:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  functionaltestingservicesorchestrator:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  codestyletesterservice:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+

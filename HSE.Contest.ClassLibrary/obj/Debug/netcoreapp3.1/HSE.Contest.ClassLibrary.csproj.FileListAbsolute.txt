@@ -1,0 +1,9 @@
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\bin\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.deps.json
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\bin\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.dll
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\bin\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.pdb
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\obj\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.csprojAssemblyReference.cache
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\obj\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.AssemblyInfoInputs.cache
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\obj\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.AssemblyInfo.cs
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\obj\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.csproj.CoreCompileInputs.cache
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\obj\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.dll
+D:\диплом\HSE.Contest\HSE.Contest.ClassLibrary\obj\Debug\netcoreapp3.1\HSE.Contest.ClassLibrary.pdb

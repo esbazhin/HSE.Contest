@@ -1,0 +1,61 @@
+version: '3.4'
+
+services:
+  testingsystemservice:
+    image: ${DOCKER_REGISTRY-}testingsystemservice
+    build:
+      context: .
+      dockerfile: TestingSystemService\Dockerfile
+    ports:
+      - "1337:80"
+    volumes:
+      - c:\config:c:\config:ro
+
+
+  compilerservicesorchestrator:
+    image: ${DOCKER_REGISTRY-}compilerservicesorchestrator
+    build:
+      context: .
+      dockerfile: CompilerServicesOrchestrator\Dockerfile
+    ports:
+      - "1338:80"
+    volumes:
+      - c:\config:c:\config:ro
+      - type: npipe
+        source: \\.\pipe\docker_engine
+        target: \\.\pipe\docker_engine
+
+
+  reflectiontesterservice:
+    image: ${DOCKER_REGISTRY-}reflectiontesterservice
+    build:
+      context: .
+      dockerfile: ReflectionTesterService\Dockerfile
+    ports:
+      - "1339:80"
+    volumes:
+      - c:\config:c:\config:ro
+
+
+  functionaltestingservicesorchestrator:
+    image: ${DOCKER_REGISTRY-}functionaltestingservicesorchestrator
+    build:
+      context: .
+      dockerfile: FunctionalTestingServicesOrchestrator\Dockerfile
+    ports:
+      - "1340:80"
+    volumes:
+      - c:\config:c:\config:ro
+      - type: npipe
+        source: \\.\pipe\docker_engine
+        target: \\.\pipe\docker_engine
+
+  codestyletesterservice:
+    image: ${DOCKER_REGISTRY-}codestyletesterservice
+    build:
+      context: .
+      dockerfile: CodeStyleTesterService\Dockerfile
+    ports:
+      - "1342:80"
+    volumes:
+      - c:\config:c:\config:ro

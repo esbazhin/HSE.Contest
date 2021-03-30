@@ -1,0 +1,103 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HSE.Contest", "HSE.Contest\HSE.Contest.csproj", "{7D3E57B8-C5AB-4AC0-91FE-B8D16ABAB1D1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HSE.Contest.ClassLibrary", "HSE.Contest.ClassLibrary\HSE.Contest.ClassLibrary.csproj", "{B18701B1-18A8-49F7-96FF-D29737DE418B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestingSystemService", "TestingSystemService\TestingSystemService.csproj", "{AB464678-37D3-429C-9310-E4FBD4ED8244}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CompilationServices", "CompilationServices", "{82831A48-2846-43B4-841C-AC34302CB719}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CompilerServicesOrchestrator", "CompilerServicesOrchestrator\CompilerServicesOrchestrator.csproj", "{B368597D-059B-42BE-BDB0-A6B7221A5541}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCoreCompilerService", "NetCoreCompilerService\NetCoreCompilerService.csproj", "{2170248F-CED4-4316-BCD7-D05E66FAE288}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FunctionalTestingServices", "FunctionalTestingServices", "{8C5056BC-7B7D-4A8B-8595-542255598D0F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionalTestingServicesOrchestrator", "FunctionalTestingServicesOrchestrator\FunctionalTestingServicesOrchestrator.csproj", "{19F4C02C-B6C2-4345-B6E4-8A06AC58CF12}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCoreFunctionalTesterService", "NetCoreFunctionalTesterService\NetCoreFunctionalTesterService.csproj", "{FD2013D5-7738-4D47-9D4D-7FF284694338}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReflectionTesterService", "ReflectionTesterService\ReflectionTesterService.csproj", "{E1A00368-E3A7-4C89-80A8-0F47CF7854F6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetFrameworkCompilerService", "NetFrameworkCompilerService\NetFrameworkCompilerService.csproj", "{1497BF83-0446-4D5A-AFCE-4A9CF88C898F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetFrameworkFunctionalTesterService", "NetFrameworkFunctionalTesterService\NetFrameworkFunctionalTesterService.csproj", "{EE0ACCE2-8852-4281-AF47-E47F5D5C632A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeStyleTesterService", "CodeStyleTesterService\CodeStyleTesterService.csproj", "{702127A5-4AFD-48C4-8A8E-0CF09D0855E9}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{87E825A9-4025-48AF-82AC-C41B01ACC36E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7D3E57B8-C5AB-4AC0-91FE-B8D16ABAB1D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D3E57B8-C5AB-4AC0-91FE-B8D16ABAB1D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D3E57B8-C5AB-4AC0-91FE-B8D16ABAB1D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D3E57B8-C5AB-4AC0-91FE-B8D16ABAB1D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B18701B1-18A8-49F7-96FF-D29737DE418B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B18701B1-18A8-49F7-96FF-D29737DE418B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B18701B1-18A8-49F7-96FF-D29737DE418B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B18701B1-18A8-49F7-96FF-D29737DE418B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B368597D-059B-42BE-BDB0-A6B7221A5541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B368597D-059B-42BE-BDB0-A6B7221A5541}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B368597D-059B-42BE-BDB0-A6B7221A5541}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B368597D-059B-42BE-BDB0-A6B7221A5541}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2170248F-CED4-4316-BCD7-D05E66FAE288}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2170248F-CED4-4316-BCD7-D05E66FAE288}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2170248F-CED4-4316-BCD7-D05E66FAE288}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2170248F-CED4-4316-BCD7-D05E66FAE288}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19F4C02C-B6C2-4345-B6E4-8A06AC58CF12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19F4C02C-B6C2-4345-B6E4-8A06AC58CF12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19F4C02C-B6C2-4345-B6E4-8A06AC58CF12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19F4C02C-B6C2-4345-B6E4-8A06AC58CF12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD2013D5-7738-4D47-9D4D-7FF284694338}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD2013D5-7738-4D47-9D4D-7FF284694338}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD2013D5-7738-4D47-9D4D-7FF284694338}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD2013D5-7738-4D47-9D4D-7FF284694338}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1A00368-E3A7-4C89-80A8-0F47CF7854F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1A00368-E3A7-4C89-80A8-0F47CF7854F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1A00368-E3A7-4C89-80A8-0F47CF7854F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1A00368-E3A7-4C89-80A8-0F47CF7854F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1497BF83-0446-4D5A-AFCE-4A9CF88C898F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1497BF83-0446-4D5A-AFCE-4A9CF88C898F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1497BF83-0446-4D5A-AFCE-4A9CF88C898F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1497BF83-0446-4D5A-AFCE-4A9CF88C898F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE0ACCE2-8852-4281-AF47-E47F5D5C632A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE0ACCE2-8852-4281-AF47-E47F5D5C632A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE0ACCE2-8852-4281-AF47-E47F5D5C632A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE0ACCE2-8852-4281-AF47-E47F5D5C632A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{702127A5-4AFD-48C4-8A8E-0CF09D0855E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{702127A5-4AFD-48C4-8A8E-0CF09D0855E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{702127A5-4AFD-48C4-8A8E-0CF09D0855E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{702127A5-4AFD-48C4-8A8E-0CF09D0855E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87E825A9-4025-48AF-82AC-C41B01ACC36E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87E825A9-4025-48AF-82AC-C41B01ACC36E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87E825A9-4025-48AF-82AC-C41B01ACC36E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87E825A9-4025-48AF-82AC-C41B01ACC36E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B368597D-059B-42BE-BDB0-A6B7221A5541} = {82831A48-2846-43B4-841C-AC34302CB719}
+		{2170248F-CED4-4316-BCD7-D05E66FAE288} = {82831A48-2846-43B4-841C-AC34302CB719}
+		{19F4C02C-B6C2-4345-B6E4-8A06AC58CF12} = {8C5056BC-7B7D-4A8B-8595-542255598D0F}
+		{FD2013D5-7738-4D47-9D4D-7FF284694338} = {8C5056BC-7B7D-4A8B-8595-542255598D0F}
+		{1497BF83-0446-4D5A-AFCE-4A9CF88C898F} = {82831A48-2846-43B4-841C-AC34302CB719}
+		{EE0ACCE2-8852-4281-AF47-E47F5D5C632A} = {8C5056BC-7B7D-4A8B-8595-542255598D0F}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1099C302-E806-4367-B42E-08053023EA5D}
+	EndGlobalSection
+EndGlobal
