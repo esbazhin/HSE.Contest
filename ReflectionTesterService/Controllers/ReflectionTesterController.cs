@@ -1,4 +1,9 @@
 ﻿using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.Communication.Requests;
+using HSE.Contest.ClassLibrary.Communication.Responses;
+using HSE.Contest.ClassLibrary.DbClasses;
+using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
+using HSE.Contest.ClassLibrary.TestsClasses.ReflectionTest;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -197,12 +202,12 @@ namespace ReflectionTesterService.Controllers
         async Task<ReflectionTestResult> TestReflection(string pathToDll, int testId)
         {
             var task = db.TaskTests.Find(testId);
-            var tests = JsonConvert.DeserializeObject<List<ClassDefinition>>(task.TestData);
+            var data = JsonConvert.DeserializeObject<ReflectionTestData>(task.TestData);
             Assembly ass = Assembly.Load(System.IO.File.ReadAllBytes(pathToDll));
             var tasks = new List<Task<List<SingleReflectionTestResult>>>();
             var allTypes = ass.GetTypes().Select(t => new ClassDefinition(t, 0));
 
-            foreach (var test in tests)
+            foreach (var test in data.ClassDefinitions)
             {
                 var cur = allTypes.FirstOrDefault(t => t.Name == test.Name.Replace(" ", ""));
                 if (cur == null)

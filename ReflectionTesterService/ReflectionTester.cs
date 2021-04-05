@@ -1,4 +1,4 @@
-﻿using HSE.Contest.ClassLibrary;
+﻿using HSE.Contest.ClassLibrary.TestsClasses.ReflectionTest;
 using System;
 using System.Collections.Generic;
 using System.Linq;

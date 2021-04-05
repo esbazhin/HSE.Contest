@@ -1,6 +1,6 @@
-﻿namespace HSE.Contest.ClassLibrary
+﻿namespace HSE.Contest.ClassLibrary.TestsClasses.CodeStyleTest
 {
-    public class CodeStyleSettings
+    public class CodeStyleTestData
     {
         public bool ShouldUpdate { get; set; }
         public int CodeStyleFilesId { get; set; }

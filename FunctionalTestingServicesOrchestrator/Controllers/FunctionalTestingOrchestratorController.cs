@@ -1,6 +1,9 @@
 ﻿using Docker.DotNet;
 using Docker.DotNet.Models;
 using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.Communication.Requests;
+using HSE.Contest.ClassLibrary.Communication.Responses;
+using HSE.Contest.ClassLibrary.DbClasses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;

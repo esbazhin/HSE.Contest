@@ -1,9 +1,13 @@
 ﻿using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.Communication.Requests;
+using HSE.Contest.ClassLibrary.Communication.Responses;
+using HSE.Contest.ClassLibrary.DbClasses;
+using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
+using HSE.Contest.ClassLibrary.TestsClasses.FunctionalTest;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -189,9 +193,9 @@ namespace NetCoreFunctionalTesterService.Controllers
             var task = db.StudentTasks.Find(taskId);
 
             var task1 = db.TaskTests.Find(testId);
-            var tests = JsonConvert.DeserializeObject<List<CommonTest>>(task1.TestData);
+            var data = JsonConvert.DeserializeObject<FunctionalTestData>(task1.TestData);
 
-            var tasks = tests.Select(t => Task.Run(() =>
+            var tasks = data.FunctionalTests.Select(t => Task.Run(() =>
             {
                 var result = SingleTest(t.Input, pathToDll, task.TimeLimit.HasValue ? task.TimeLimit.Value : 10000);
                 return new SingleFunctTestResult(t.Output.Replace("\r\n", "\n"), result.Item1.Replace("\r\n", "\n"), result.Item2, t.Name, t.Input, result.Item3);

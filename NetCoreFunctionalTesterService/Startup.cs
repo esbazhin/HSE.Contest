@@ -5,13 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System;
-using HSE.Contest.ClassLibrary;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Threading.Tasks;
 using System.Text.Json;
+using HSE.Contest.ClassLibrary.DbClasses;
 
 namespace NetCoreFunctionalTesterService
 {

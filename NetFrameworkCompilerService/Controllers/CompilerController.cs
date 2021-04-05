@@ -1,4 +1,10 @@
 ﻿using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.Communication.Requests;
+using HSE.Contest.ClassLibrary.Communication.Responses;
+using HSE.Contest.ClassLibrary.DbClasses;
+using HSE.Contest.ClassLibrary.DbClasses.Files;
+using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
+using HSE.Contest.ClassLibrary.TestsClasses.CodeStyleTest;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -225,7 +231,7 @@ namespace NetFrameworkCompilerService.Controllers
                 return false;
             }
 
-            var data = JsonConvert.DeserializeObject<CodeStyleSettings>(task.TestData);
+            var data = JsonConvert.DeserializeObject<CodeStyleTestData>(task.TestData);
 
             if (!data.ShouldUpdate)
             {

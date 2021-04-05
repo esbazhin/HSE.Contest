@@ -1,4 +1,4 @@
-using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.DbClasses;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;

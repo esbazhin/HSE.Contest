@@ -1,4 +1,4 @@
-﻿namespace HSE.Contest.ClassLibrary
+﻿namespace HSE.Contest.ClassLibrary.Communication.Requests
 {
     public class TestRequest
     {
