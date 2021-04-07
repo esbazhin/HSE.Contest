@@ -101,7 +101,7 @@ namespace NetCoreFunctionalTesterService.Controllers
                         return WriteToDb(result);
                     }
 
-                    var resp = await TestProject(pathToDll, solution.TaskId, request.TestId);
+                    var resp = await TestProject(pathToDll, request.TestId);
                     resp.OK = true;
 
                     dir.Delete(true);
@@ -188,16 +188,14 @@ namespace NetCoreFunctionalTesterService.Controllers
             return f.FullName;
         }
 
-        async Task<FunctionalTestResult> TestProject(string pathToDll, int taskId, int testId)
-        {
-            var task = db.StudentTasks.Find(taskId);
-
-            var task1 = db.TaskTests.Find(testId);
-            var data = JsonConvert.DeserializeObject<FunctionalTestData>(task1.TestData);
+        async Task<FunctionalTestResult> TestProject(string pathToDll, int testId)
+        {           
+            var task = db.TaskTests.Find(testId);
+            var data = JsonConvert.DeserializeObject<FunctionalTestData>(task.TestData);
 
             var tasks = data.FunctionalTests.Select(t => Task.Run(() =>
             {
-                var result = SingleTest(t.Input, pathToDll, task.TimeLimit.HasValue ? task.TimeLimit.Value : 10000);
+                var result = SingleTest(t.Input, pathToDll, t.TimeLimit);
                 return new SingleFunctTestResult(t.Output.Replace("\r\n", "\n"), result.Item1.Replace("\r\n", "\n"), result.Item2, t.Name, t.Input, result.Item3);
             }));
 

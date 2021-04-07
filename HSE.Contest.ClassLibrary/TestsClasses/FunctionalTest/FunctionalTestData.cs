@@ -13,5 +13,6 @@ namespace HSE.Contest.ClassLibrary.TestsClasses.FunctionalTest
         public string Input { get; set; }
         public string Output { get; set; }
         public int Key { get; set; }
+        public int TimeLimit { get; set; }
     }
 }

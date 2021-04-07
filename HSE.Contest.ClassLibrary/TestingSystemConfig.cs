@@ -23,7 +23,8 @@ namespace HSE.Contest.ClassLibrary
     {
         public string Host { private get;  set; }
         public string Port { get; set; }
-        public string ActionLink { get; set; }
+        public string TestActionLink { get; set; }
+        public string TaskActionLink { get; set; }
         public bool InDocker { get; set; }
 
         public string GetHost(ServiceConfig service)
@@ -42,9 +43,14 @@ namespace HSE.Contest.ClassLibrary
             return "http://" + GetHost(service) + ":" + Port;
         }
 
-        public string GetFullLinkFrom(ServiceConfig service)
+        public string GetFullTestLinkFrom(ServiceConfig service)
         {
-            return GetHostLinkFrom(service) + ActionLink;
+            return GetHostLinkFrom(service) + TestActionLink;
+        }
+
+        public string GetFullTaskLinkFrom(ServiceConfig service)
+        {
+            return GetHostLinkFrom(service) + TaskActionLink;
         }
     }
 
@@ -69,6 +75,7 @@ namespace HSE.Contest.ClassLibrary
     public class ImageConfig
     {
         public string Name { get; set; }
-        public string ActionLink { get; set; }
+        public string TestActionLink { get; set; }
+        public string TaskActionLink { get; set; }
     }
 }

@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using HSE.Contest.ClassLibrary.DbClasses.Administration;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -17,16 +19,22 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
         [Column(name: "groupId")]
         public int? GroupId { get; set; }
 
-        [Column(name: "tl")]
-        public int? TimeLimit { get; set; }
+        [JsonIgnore]
+        public virtual Group Group { get; set; }
 
         [Column(name: "taskText", TypeName = "text")]
-        string TaskText { get; set; }
+        public string TaskText { get; set; }
+
+        [Column(name: "isContest")]
+        public bool IsContest { get; set; }
 
         [Column(name: "from", TypeName = "timestamptz")]
         public DateTime From { get; set; } = DateTime.Now.Date;
         [Column(name: "to", TypeName = "timestamptz")]
         public DateTime To { get; set; } = DateTime.Now.Date.AddMinutes(20);
+
+        [JsonIgnore]
+        public virtual List<TaskTest> Tests { get; set; } = new List<TaskTest>();
 
         private readonly JsonSerializerSettings serializerSettings = new JsonSerializerSettings
         {

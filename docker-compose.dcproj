@@ -5,8 +5,8 @@
     <DockerTargetOS>Windows</DockerTargetOS>
     <ProjectGuid>87e825a9-4025-48af-82ac-c41b01acc36e</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
-    <DockerServiceUrl>{Scheme}://{ServiceIPAddress}{ServicePort}/swagger</DockerServiceUrl>
-    <DockerServiceName>testingsystemservice</DockerServiceName>
+    <DockerServiceUrl>{Scheme}://{ServiceIPAddress}{ServicePort}</DockerServiceUrl>
+    <DockerServiceName>hse.contest</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">

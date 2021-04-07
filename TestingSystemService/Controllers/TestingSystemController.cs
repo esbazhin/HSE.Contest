@@ -124,7 +124,7 @@ namespace TestingSystemService.Controllers
                             TestId = codeStyleTask is null ? -1 : codeStyleTask.Id
                         };
 
-                        string url = config.CompilerServicesOrchestrator.GetFullLinkFrom(config.TestingSystem);
+                        string url = config.CompilerServicesOrchestrator.GetFullTestLinkFrom(config.TestingSystem);
                         using var httpClient = new HttpClient();
                         using var form = JsonContent.Create(req);
                         HttpResponseMessage response = await httpClient.PostAsync(url, form);
@@ -239,7 +239,7 @@ namespace TestingSystemService.Controllers
 
                 using var httpClient = new HttpClient();
                 using var form = JsonContent.Create(req);
-                var url = serviceConfig.GetFullLinkFrom(config.TestingSystem);
+                var url = serviceConfig.GetFullTestLinkFrom(config.TestingSystem);
                 HttpResponseMessage response = await httpClient.PostAsync(url, form);
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)

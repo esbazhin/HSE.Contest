@@ -98,7 +98,7 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
 
                         var serviceName = inspectRes.Name;
 
-                        var result = await StartTesting(port, imageConfig.ActionLink, request);
+                        var result = await StartTesting(port, imageConfig.TestActionLink, request);
 
                         await client.Containers.KillContainerAsync(id, new ContainerKillParameters());
 

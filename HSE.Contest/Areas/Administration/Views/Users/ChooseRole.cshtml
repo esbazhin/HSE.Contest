@@ -1,0 +1,15 @@
+﻿@model List<RedirectViewModel>
+
+<h2>Выберите вашу роль:</h2>
+
+@foreach (var role in Model)
+{
+    if (role.Area != null)
+    {
+        <a asp-action="@role.Action" asp-controller="@role.Controller" asp-area="@role.Area" asp-anti-forgery="true">@role.Role</a>
+    }
+    else
+    {
+        <a asp-action="@role.Action" asp-controller="@role.Controller" asp-anti-forgery="true">@role.Role</a>
+    }
+}

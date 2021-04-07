@@ -1,0 +1,195 @@
+﻿@model TaskTestViewModel
+@{
+    ViewData["Title"] = "Данные теста";
+}
+
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Professor", action = "ChangeTask", id = Model.TaskId, area = "TestingSystem" })
+}
+<h1>Данные теста</h1>
+
+<div id="app"></div>
+
+@section Scripts{
+    <script src="~/js/newTask31.js"></script>
+
+    <script>
+let taskTestData = @Json.Serialize(Model);
+
+if(taskTestData.type == "reflectionTest"){
+	if (taskTestData.data == null || taskTestData.data.classDefinitions == null) {
+		taskTestData.data = {};
+        taskTestData.data.classDefinitions = [new TypeInfo(1)];
+    }
+}
+if(taskTestData.type == "functionalTest"){
+	if (taskTestData.data == null || taskTestData.data.functionalTests == null) {
+        taskTestData.data = {};
+        taskTestData.data.functionalTests = [new CommonTestInfo(1)];
+    }
+}
+if(taskTestData.type == "codeStyleTest"){
+	if (taskTestData.data == null) {
+        taskTestData.data = {};
+		taskTestData.data.shouldUpdate = true;
+        taskTestData.data.codeStyleFilesId = taskTestData.codeStyleFiles[0].id;
+	}
+    if (taskTestData.data.shouldUpdate == null) {
+        taskTestData.data.shouldUpdate = true;
+	}
+    if (taskTestData.data.codeStyleFilesId == null) {
+        taskTestData.data.codeStyleFilesId = taskTestData.codeStyleFiles[0].id;
+    }
+}
+new Vue({
+		el: '#app',
+		data: {
+			taskTestData: taskTestData,
+			fileList: [],
+            selFramework: taskTestData.frameworkTypes[0]
+	},
+		methods: {
+			send: function () {
+                var http = new XMLHttpRequest();
+                var url = './UpdateTaskTest';
+                var data = 'json=' + encodeURIComponent(JSON.stringify(this.taskTestData));                
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                var that = this;
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.readyState == 4 && http.status == 200) {
+                        if (http.responseText != 'error') {
+                            document.location.href = http.responseText;
+                        }
+                        else {
+                            that.$message.error('An error occured. Try again!');
+                        }
+                    }
+                }
+                http.send(data);
+			},
+			handleFileUpload(info) {
+				if (info.file.status === 'done' && info.file.response && info.file.response.status == 'success') {
+					this.$message.success(`${info.file.name} file uploaded successfully`);
+                    this.taskTestData.data.classDefinitions = info.file.response.data;
+				} else if (info.file.status === 'done' && info.file.response && info.file.response.status == 'error') {
+					this.$message.error(`Error occured! ${info.file.response.data}`);
+				} else if (info.file.status === 'error') {
+					this.$message.error(`${info.file.name} file upload failed.`);
+				}
+                let fileList = [...info.fileList];
+
+                // 1. Limit the number of uploaded files
+                //    Only to show two recent uploaded files, and old ones will be replaced by the new
+                fileList = fileList.slice(-1);
+                this.fileList = fileList;
+			}
+		},
+
+		template: `
+		<div>
+			<a-page-header
+			style="border: 1px solid rgb(235, 237, 240)"
+			title="Изменение данных теста"
+			@@back="() => $router.go(-1)"
+			>
+			<template slot="extra">
+			<a-popconfirm
+				title="Sure to send?"
+				@@confirm="send"
+			>
+				<a-button key="1" type="primary">
+					Изменить
+				</a-button>
+			</a-popconfirm>
+			</template>
+			<a-descriptions size="small" :column="2">
+				<a-descriptions-item label="Название теста">
+					{{taskTestData.name}}
+				</a-descriptions-item>
+				<a-descriptions-item label="Название задачи">
+					{{taskTestData.taskName}}
+				</a-descriptions-item>
+				<a-descriptions-item label="Тип теста">
+					{{taskTestData.type}}
+				</a-descriptions-item>
+				<a-descriptions-item label="Задано группе">
+					{{taskTestData.groupName}}
+				</a-descriptions-item>
+			</a-descriptions>
+			</a-page-header>
+
+			<div v-if="taskTestData.isRaw">
+				<a-textarea
+                placeholder="Данные в формате JSON"
+	            v-model="taskTestData.data"
+                :autosize="{ minRows: 5, maxRows: 20 }"
+                />
+			</div>
+			<div v-else>
+				<div v-if="taskTestData.type == 'reflectionTest'">
+					<a-select  v-model="selFramework">
+					<a-select-option
+						v-for="(item, index) in taskTestData.frameworkTypes"
+						:key="index"
+						:value="item">  {{item}}
+					</a-select-option>
+					</a-select>
+					<a-upload
+						name="file"
+						accept="application/x-zip-compressed"
+						:action="'./ChangeTaskWithFile?framework='+selFramework"
+						:fileList="fileList"
+						v-on:change="handleFileUpload"
+					>
+						<a-button> <a-icon type="upload" /> Загрузите .zip файл с проектом VisualStudio </a-button>
+					</a-upload>
+					<all_classes :all_classes="taskTestData.data.classDefinitions"></all_classes>
+				</div>
+				<div v-else>
+					<div v-if="taskTestData.type == 'functionalTest'">
+						<common_tests :tests="taskTestData.data.functionalTests"></common_tests>
+					</div>
+					<div v-else>
+						<div v-if="taskTestData.type == 'codeStyleTest'">
+							<a-form>
+								<a-form-item
+								label="Выберите набор файлов с правилами код-стайла:"
+								>
+								<a-select  v-model="taskTestData.data.codeStyleFilesId">
+									<a-select-option
+									v-for="(item, index) in taskTestData.codeStyleFiles"
+										:key="index"
+										:value="item.id">  {{item.name}}
+									</a-select-option>
+								</a-select>
+								</a-form-item>
+								<a-form-item>
+									<a-button block type="dashed">
+										Управление файлами с правилами код-стайла
+									</a-button>
+								</a-form-item>
+								<a-form-item
+								label="Обновлять ли файлы при компиляции?"
+								>
+									<a-switch block v-model="taskTestData.data.shouldUpdate">
+										<a-icon slot="checkedChildren" type="check" />
+										<a-icon slot="unCheckedChildren" type="close" />
+									</a-switch>
+								</a-form-item>
+							</a-form>
+						</div>
+						<div v-else>
+							Произошла какая-то ошибка и ни один вариант ввода не подошел под данный тип теста!
+						</div>
+					</div>
+				</div>			
+			</div>			
+		</div>
+		`,
+	});
+    </script>
+}

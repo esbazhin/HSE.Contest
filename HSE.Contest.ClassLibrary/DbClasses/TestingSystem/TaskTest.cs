@@ -11,6 +11,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
 
         [Column(name: "taskId")]
         public int TaskId { get; set; }
+        public virtual StudentTask Task { get; set; }
 
         [Column(name: "testType")]
         public string TestType { get; set; }

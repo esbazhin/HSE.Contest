@@ -59,3 +59,13 @@ services:
       - "1342:80"
     volumes:
       - c:\config:c:\config:ro
+
+  hse.contest:
+    image: ${DOCKER_REGISTRY-}hsecontest
+    build:
+      context: .
+      dockerfile: HSE.Contest\Dockerfile
+    ports:
+      - "8888:80"
+    volumes:
+      - c:\config:c:\config:ro

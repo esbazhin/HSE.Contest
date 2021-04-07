@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
+    <DockerfileRunArguments>-v c:\config:c:\config:ro</DockerfileRunArguments>
+    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,9 +15,10 @@
   <ItemGroup>
     <Folder Include="Areas\Administration\Data\" />
     <Folder Include="Areas\Administration\Models\" />
-    <Folder Include="Areas\Administration\Views\" />
+    <Folder Include="Areas\TestingSystem\Data\" />
+    <Folder Include="Areas\TestingSystem\Models\" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <ProjectReference Include="..\HSE.Contest.ClassLibrary\HSE.Contest.ClassLibrary.csproj" />
   </ItemGroup>

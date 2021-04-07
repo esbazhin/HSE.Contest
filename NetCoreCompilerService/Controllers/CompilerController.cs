@@ -330,5 +330,107 @@ namespace NetCoreCompilerService.Controllers
             }
             return f.FullName;
         }
+
+        [HttpPost]
+        public CompilationResponse CompileTaskProject([FromBody] CompilationRequest request)
+        {
+            try
+            {               
+                if (request.File != null)
+                {
+                    string dirPath = "/home/solution";
+
+                    if (Directory.Exists(dirPath))
+                    {
+                        Directory.Delete(dirPath, true);
+                    }
+
+                    var dir = Directory.CreateDirectory(dirPath);
+                    string fullPath = dirPath + "/" + "taskCompilation.zip";
+
+                    // сохраняем файл в папку
+                    System.IO.File.WriteAllBytes(fullPath, request.File);
+                    ZipFile.ExtractToDirectory(fullPath, dirPath, true);
+
+                    var pathToProj = FindProjectFile(dir);
+
+                    CompilationResponse result;
+
+                    if (pathToProj == null)
+                    {
+                        result = new CompilationResponse
+                        {                           
+                            Message = "No project file found!",
+                            OK = false
+                        };
+
+                        return result;
+                    }
+
+                    string pathToComp = dirPath + "/build";
+                    if (Directory.Exists(pathToComp))
+                    {
+                        Directory.Delete(pathToComp, true);
+                    }                    
+
+                    var output = Compile(pathToProj, pathToComp);
+
+                    if (output.Item1.Split("\n").FirstOrDefault(l => l.Contains("Error(s)")).Replace("Error(s)", "").Trim() != "0" || !Directory.Exists(pathToComp))
+                    {
+                        var lines = output.Item1.Split("\r\n");
+                        var comp = new WarningsComparer();
+                        var errors = lines.Where(l => l.Contains("error")).Select(w => new CodeStyleCommentary(w)).Distinct(comp).ToList();
+                        var res = new CodeStyleTestResult
+                        {
+                            Results = new CodeStyleResults
+                            {
+                                Errors = errors
+                            }
+                        };
+
+                        result = new CompilationResponse
+                        {
+                            Message = output.Item2,
+                            OK = false
+                        };
+
+                        return result;
+                    }
+                    else
+                    {
+                        string compFileName = "compilation.zip";
+                        string compilationPath = dirPath + "/" + compFileName;
+                        ZipFile.CreateFromDirectory(pathToComp, compilationPath);
+
+                        var dataBytes = System.IO.File.ReadAllBytes(compilationPath);
+
+                        result = new CompilationResponse
+                        {
+                            File = dataBytes,
+                            OK = true,
+                            Message = "succes"
+                        };
+
+                        return result;
+                    }
+                }
+                else
+                {
+                    return new CompilationResponse
+                    {
+                        OK = false,
+                        Message = "no file found",
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                return new CompilationResponse
+                {
+                    OK = false,
+                    Message = "Error occured: " + e.Message + (e.InnerException is null ? "" : " Inner: " + e.InnerException.Message),
+                };
+            }
+        }
     }
 }

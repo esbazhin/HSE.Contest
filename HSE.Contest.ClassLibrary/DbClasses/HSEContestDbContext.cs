@@ -50,6 +50,11 @@ namespace HSE.Contest.ClassLibrary.DbClasses
             modelBuilder.Entity<DbFileInfo>()
                 .HasKey(t => t.Id);
 
+            modelBuilder.Entity<TaskTest>()
+                .HasOne(sc => sc.Task)
+                .WithMany(s => s.Tests)
+                .HasForeignKey(sc => sc.TaskId);
+
             modelBuilder.Entity<UserRole>()
                 .HasKey(t => new { t.UserId, t.RoleId });
 

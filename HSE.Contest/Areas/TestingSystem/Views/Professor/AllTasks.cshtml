@@ -1,0 +1,48 @@
+﻿@model IEnumerable<TaskViewModel>
+
+@{
+    ViewData["Title"] = "Текущие задачи";
+}
+
+<h1>Текущие задачи</h1>
+<div id="app"></div>
+
+
+
+@section Scripts{
+    <script>
+        let tasks = @Html.Raw(Json.Serialize(Model));
+        new Vue({
+            el: '#app',
+            data: {
+                tasks: tasks,
+            },
+            methods: {
+                redirect: function (id) { document.location.href = './DeleteTask?id=' + id;}
+            },
+            template: `
+                <div>
+                <a-list itemLayout="horizontal" :dataSource="tasks">
+                    <a-list-item slot="renderItem" slot-scope="item, index">
+                            <a :href="'./ChangeTask?id=' + item.id" slot="actions">edit</a>
+                            <a-popconfirm slot="actions"
+                                title="Sure to delete?"
+                                @@confirm="redirect(item.id)"
+                                >
+                                    <a-button type="link">delete</a-button>
+                            </a-popconfirm>                             
+                        <a-list-item-meta :description="item.description">
+                            <label slot="title">{{item.name}}</label>
+                        </a-list-item-meta>
+                    </a-list-item>
+                </a-list>
+                <a href="./CreateNewTask">
+                    <a-button type="dashed" block>
+                        <a-icon type="plus" /> Добавить новую задачу
+                    </a-button>
+                </a>
+            </div>
+                `,
+        });
+    </script>
+}

@@ -1,0 +1,107 @@
+﻿@model TaskCRUDViewModel
+@{
+    ViewData["Title"] = "Новая задача";
+}
+
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Professor", action = "AllTasks", area = "TestingSystem" })
+}
+<h1>Новая задача</h1>
+
+<div id="app"></div>
+
+@section Scripts{
+    <script src="~/js/newTask31.js"></script>
+    
+    <script>
+let groups1 = @Json.Serialize(Model.Groups);
+
+let task1 = @Json.Serialize(Model.Task);
+
+let test_types1 = @Json.Serialize(Model.TestTypes);
+
+let isUpdate1 = @Json.Serialize(Model.IsUpdate);
+task1.time = [moment(task1.time[0]), moment(task1.time[1])];
+
+let isLoading = { "isLoading": false };
+
+new Vue({
+		el: '#app',
+		data: {
+            task: task1,
+			groups: groups1,
+			test_types: test_types1,
+			isUpdate: isUpdate1,
+			isLoading: isLoading
+		},
+
+		template: `
+		<div>
+		<a-spin :spinning="isLoading.isLoading">
+		<a-collapse :bordered="true" :activeKey="[1,2,3,4,5,6]">
+		<a-collapse-panel header="Введите название задачи:" key="1">
+			<a-input type="test" v-model="task.name"/>
+		</a-collapse-panel>
+		<a-collapse-panel header="Введите условие задачи:" key="2">
+			 <a-textarea
+                placeholder="Условие"
+	            v-model="task.text"
+                :autosize="{ minRows: 5, maxRows: 20 }"
+                />
+		</a-collapse-panel>
+		<a-collapse-panel header="Настройки:" key="3">
+		<a-row type="flex" justify="center" align="top">
+		<a-col :span="8">
+		<a-form layout="vertical">
+		<a-form-item
+			label="Выберите группу:"
+			:wrapperCol="{ span: 20 }"
+		>
+		<a-select  v-model="task.groupId">
+			<a-select-option
+				v-for="(item, index) in groups"
+				:key="index"
+				:value="item.id">  {{item.name}}
+			</a-select-option>
+		</a-select>
+		 </a-form-item>
+		 <a-form-item
+		 :wrapperCol="{ span: 20 }">
+		<a-button block type="dashed">
+			Управление группами
+		</a-button>
+		 </a-form-item>
+		 </a-form>
+		</a-col>
+		<a-col :span="8">
+		<a-form-item
+			label="Период доступности"
+		>
+		<a-range-picker
+			v-model="task.time"
+			:show-time="{ format: 'HH:mm' }"
+			format="YYYY-MM-DD HH:mm"
+			:placeholder="['Start Time', 'End Time']"
+		/>
+		</a-form-item>
+		</a-col>
+		<a-col :span="8">
+		<a-form-item
+			label="Тип"
+		>
+		<a-switch block v-model="task.isContest" checked-children="Контест" un-checked-children="КР"/>
+		</a-form-item>
+		</a-col>
+		</a-row>
+		</a-collapse-panel>
+		<a-collapse-panel header="Тесты:" key="6">
+		<task_tests :tests="task.tests" :test_types="test_types" :isUpdate="isUpdate"></task_tests>
+		</a-collapse-panel>
+		</a-collapse>
+	<send_to_server :task="task" :isUpdate="isUpdate" :isLoading="isLoading"></send_to_server>
+	</a-spin>
+	</div>
+		`,
+	});
+    </script>
+}
