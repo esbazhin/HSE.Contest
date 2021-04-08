@@ -94,6 +94,7 @@ namespace HSE.Contest.ClassLibrary.TestsClasses.FunctionalTest
         public string Actual { get; set; }
         public string Errors { get; set; }
         public virtual ResultCode Result { get; set; }
+        public  string ResultString { get { return Result.ToString(); } }
         public bool Passed { get; set; }
     }
 }

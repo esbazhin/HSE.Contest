@@ -100,17 +100,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             {
                 NotFound();
             }
-
-            //JsonSerializerSettings serializerSettings = new JsonSerializerSettings
-            //{
-            //    ContractResolver = new CamelCasePropertyNamesContractResolver(),
-            //    DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind
-            //};
-
-            //string res = JsonConvert.SerializeObject(new TaskTestViewModel(y, task), serializerSettings);
-
-            //return Content(res);
-
+           
             var codeStyleFiles = db.CodeStyleFiles.Select(f => new CodeStyleFilesViewModel(f)).ToArray();
 
             return View(new TaskTestViewModel(y, task, config.CompilerImages.Keys.ToArray(), codeStyleFiles));
@@ -149,6 +139,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             y.IsContest = jsonTask.IsContest;
             y.From = jsonTask.Time[0];
             y.To = jsonTask.Time[1];
+            y.NumberOfAttempts = jsonTask.AttemptsNumber;
 
             var x = db.StudentTasks.Update(y);
             var beforeState = x.State;
@@ -219,6 +210,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 IsContest = jsonTask.IsContest,
                 From = jsonTask.Time[0],
                 To = jsonTask.Time[1],
+                NumberOfAttempts = jsonTask.AttemptsNumber
             };
 
             var x = db.StudentTasks.Add(newTask);

@@ -28,6 +28,9 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
         [Column(name: "isContest")]
         public bool IsContest { get; set; }
 
+        [Column(name: "attemptsNumber")]
+        public int NumberOfAttempts { get; set; }
+
         [Column(name: "from", TypeName = "timestamptz")]
         public DateTime From { get; set; } = DateTime.Now.Date;
         [Column(name: "to", TypeName = "timestamptz")]

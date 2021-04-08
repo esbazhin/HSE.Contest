@@ -34,6 +34,16 @@ new Vue({
 			isUpdate: isUpdate1,
 			isLoading: isLoading
 		},
+		methods:{
+			typeChange: function () {
+				if (this.task.isContest) {
+					this.task.attemptsNumber = 100;
+				}
+				else {
+                    this.task.attemptsNumber = 1;
+                }
+            }
+		},
 
 		template: `
 		<div>
@@ -51,7 +61,7 @@ new Vue({
 		</a-collapse-panel>
 		<a-collapse-panel header="Настройки:" key="3">
 		<a-row type="flex" justify="center" align="top">
-		<a-col :span="8">
+		<a-col :span="6">
 		<a-form layout="vertical">
 		<a-form-item
 			label="Выберите группу:"
@@ -73,7 +83,7 @@ new Vue({
 		 </a-form-item>
 		 </a-form>
 		</a-col>
-		<a-col :span="8">
+		<a-col :span="6">
 		<a-form-item
 			label="Период доступности"
 		>
@@ -85,11 +95,22 @@ new Vue({
 		/>
 		</a-form-item>
 		</a-col>
-		<a-col :span="8">
+		<a-col :span="6">
 		<a-form-item
 			label="Тип"
 		>
-		<a-switch block v-model="task.isContest" checked-children="Контест" un-checked-children="КР"/>
+		<a-switch block v-model="task.isContest" checked-children="Контест" un-checked-children="КР" @@change="typeChange"/>
+		</a-form-item>
+		</a-col>
+		<a-col :span="6">
+		<a-form-item
+			label="Кол-во попыток"
+		>
+			<a-input-number v-model="task.attemptsNumber"
+				:disabled="!task.isContest"
+				:min="0"
+				:max="100"
+			/>
 		</a-form-item>
 		</a-col>
 		</a-row>

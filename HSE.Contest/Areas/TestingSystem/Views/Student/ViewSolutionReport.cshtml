@@ -1,0 +1,178 @@
+﻿@model SolutionReportViewModel
+@{
+    ViewData["Title"] = "Отправка решения";
+}
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Student", action = "SendStudentSolution", id = Model.TaskId, area = "TestingSystem" })
+}
+
+<div id="app"></div>
+
+@section Scripts{
+    <script>
+const sol = @Html.Raw(Json.Serialize(Model));
+
+new Vue({
+	el: '#app',
+	data: {
+		sol: sol,
+		fileList: [],
+		columns: [
+			{ title: 'ID', dataIndex: 'id', key: 'id'},
+			{ title: 'Позиция', dataIndex: 'position', key: 'position' },
+			{ title: 'Сообщение', dataIndex: 'message', key: 'message'},
+		]
+	},
+	methods: {
+		prettyPrintTime(timeStr){
+			return moment(timeStr).format("dddd, MMMM Do YYYY, h:mm:ss a");
+		},
+		getValueStyle(res){
+			if(res == 'OK'){
+				return { color: '#3f8600' };
+			}
+			else{
+				return { color: '#cf1322' };
+			}
+		},
+        countPassedTests(tests) {
+			return tests.filter(t => t.passed).length;
+        }
+	},
+	template: `
+		<div>
+		<a-page-header
+			style="border: 1px solid rgb(235, 237, 240)"
+			title="Отчет по решению"
+			@@back="() => $router.go(-1)"
+		>
+
+		<a-descriptions size="small" :column="3">
+			<a-descriptions-item>
+				<a-statistic title="Итоговая оценка" :value="sol.totalScore"/>
+			</a-descriptions-item>
+			<a-descriptions-item>
+				<a-statistic title="Итоговый вердикт" :value="sol.result" :value-style="getValueStyle(sol.result)"/>
+			</a-descriptions-item>
+			<a-descriptions-item>
+				<a-statistic title="Время отправки" :value="prettyPrintTime(sol.time)" />
+			</a-descriptions-item>
+		</a-descriptions>
+		</a-page-header>
+		<a-card title="Результаты тестов">
+		<div v-if="sol.testingResults == null || sol.testingResults.length ==0">
+			<a-empty
+				image="https://gw.alipayobjects.com/mdn/miniapp_social/afts/img/A*pevERLJC9v0AAAAAAAAAAABjAQAAAQ/original"
+			>
+			<span slot="description">Нет данных</span>
+
+			</a-empty>
+		</div>
+		<div v-else>
+            <a-tabs tab-position="left" :default-active-key="0">
+				<a-tab-pane v-for="(item, index) in sol.testingResults" :key="index" :tab="item.testName">
+				<div>
+					<a-page-header :title="item.testName">
+						<a-descriptions size="small" :column="2">
+							<a-descriptions-item>
+								<a-statistic title="Итоговая оценка" :value="item.score"/>
+							</a-descriptions-item>
+						<a-descriptions-item>
+							<a-statistic title="Итоговый вердикт" :value="item.result" :value-style="getValueStyle(item.result)"/>
+						</a-descriptions-item>
+						</a-descriptions>
+						<div v-if="item.data != null && item.data.results != null && item.data.results.length > 0">
+							<a-descriptions-item>
+								<a-statistic title="Пройдено тестов" :value="countPassedTests(item.data.results)">
+									<template #suffix>
+										<span> / {{item.data.results.length}}</span>
+									</template>
+								</a-statistic>
+							</a-descriptions-item>
+						</div>
+					</a-page-header>
+					<div v-if="item.testType == 'reflectionTest'">
+						<a-card title="Комментарии" style="white-space: pre-line">
+							{{item.commentary}}
+						</a-card>
+					</div>
+					<div v-else>
+						<div v-if="item.testType == 'functionalTest'">
+							<div v-if="item.data == null || item.data.results == null ||item.data.results.length == 0">
+								<a-card title="Комментарии" style="white-space: pre-line">
+									{{item.commentary}}
+								</a-card>
+							</div>
+							<div v-else>
+							<a-card title="Тесты">								
+								<a-card :title="test.name" :key="index" v-for="(test, index) in item.data.results">
+									<a-tag slot="extra"
+										:color="test.resultString === 'OK' ? 'green' : 'volcano'"
+									>
+										{{test.resultString}}
+									</a-tag>
+									<a-row>
+										<a-col :span="6">
+											<a-card title="Ввод" :bordered="false" style="white-space: pre-line">
+												{{test.input}}
+											</a-card>
+										</a-col>
+										<a-col :span="6">
+											<a-card title="Ожидаемый результат" :bordered="false" style="white-space: pre-line">
+											  {{test.expected}}
+											</a-card>
+										</a-col>
+										<a-col :span="6">
+											<a-card title="Реальный результат" :bordered="false" style="white-space: pre-line">
+											  {{test.actual}}
+											</a-card>
+										</a-col>
+										<a-col :span="6">
+											<a-card title="Ошибки" :bordered="false" style="white-space: pre-line">
+											  {{test.errors}}
+											</a-card>
+										</a-col>
+									</a-row>
+								</a-card>
+							</a-card>
+							</div>
+						</div>
+						<div v-else>
+							<div v-if="item.testType == 'codeStyleTest'">
+								<div v-if="item.data == null ||item.data.results == null">
+									<a-card title="Комментарии" style="white-space: pre-line">
+										{{item.commentary}}
+									</a-card>
+								</div>
+								<div v-else>
+									<div v-if="item.data.results.errors != null && item.data.results.errors.length > 0">
+										<a-card title="Ошибки">
+											<a-table :columns="columns" :data-source="item.data.results.errors" size="small">
+
+											</a-table>
+										</a-card>
+									</div>
+									<a-card title="Предупреждения">
+											<a-table :columns="columns" :data-source="item.data.results.warnings" size="small">
+
+											</a-table>
+									</a-card>
+								</div>
+							</div>
+							<div v-else>
+								<a-card title="Комментарии" style="white-space: pre-line">
+									{{item.commentary}}
+								</a-card>
+							</div>
+						</div>
+					</div>
+				</div>
+				</a-tab-pane>
+			</a-tabs>
+		</div>
+        </a-card>
+	</div>
+		`
+});
+    </script>
+}

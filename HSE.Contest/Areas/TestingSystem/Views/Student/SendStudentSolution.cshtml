@@ -1,0 +1,150 @@
+﻿@model StudentTaskViewModel
+@{
+    ViewData["Title"] = "Отправка решения";
+}
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Student", action = "AllTasks", area = "TestingSystem" })
+}
+
+<div id="app"></div>
+
+@section Scripts{
+<script>
+const sol = @Html.Raw(Json.Serialize(Model));
+sol.deadline = moment(sol.deadline);
+//sol.deadline = moment().add(5, 's');
+
+if(sol.result == 'OK'){
+	sol.valueStyle = { color: '#3f8600' };
+}
+else{
+	sol.valueStyle ={ color: '#cf1322' };
+}
+
+new Vue({
+	el: '#app',
+	data: {
+		sol: sol,
+		fileList: [],
+		columns: [
+			{ title: 'Время', width: 100, key: 'time', scopedSlots: { customRender: 'time' }},
+			{ title: 'Оценка', width: 100, dataIndex: 'totalScore', key: 'totalScore' },
+			{ title: 'Вердикт', width: 100, key: 'result', scopedSlots: { customRender: 'results' }},
+			{ title: 'Отчёт', key: 'operation', width: 100, scopedSlots: { customRender: 'action' }},
+		]
+	},
+	methods: {
+		handleFileUpload(info) {
+			if (info.file.status === 'done' && info.file.response && info.file.response.status == 'success') {
+				this.$message.success(`${info.file.name} file uploaded successfully`);
+			} else if (info.file.status === 'done' && info.file.response && info.file.response.status == 'error') {
+				this.$message.error(`Error occured! ${info.file.response.data}`);
+			} else if (info.file.status === 'error') {
+				this.$message.error(`${info.file.name} file upload failed.`);
+			}
+			let fileList = [...info.fileList];
+
+			// 1. Limit the number of uploaded files
+			//    Only to show two recent uploaded files, and old ones will be replaced by the new
+			fileList = fileList.slice(-1);
+			this.fileList = fileList;
+		},
+		customRequest(options){
+			const data = new FormData();
+			data.append('file', options.file);
+			data.append('taskId', this.sol.taskId);
+
+			var http = new XMLHttpRequest();
+			var url = './CheckSolution';
+
+			http.open('POST', url, true);
+
+			//Send the proper header information along with the request
+			//http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+			http.onreadystatechange = () => {//Call a function when the state changes.
+				if (http.readyState == 4 && http.status == 200) {
+					const response = JSON.parse(http.responseText);
+					if (response.status && response.status != 'error') {
+						document.location.href = response.data;
+					}
+					else {
+						this.$message.error('An error occured. Try again! Error: ' + response.data);
+					}
+				}
+			}
+			http.send(data);
+		 },
+		onFinish: function(){
+			this.$message.error(`Время вышло!`);
+			this.sol.canSend = false;
+		},
+		prettyPrintTime(timeStr){
+			return moment(timeStr).format("dddd, MMMM Do YYYY, h:mm:ss a");
+		}
+	},
+	template: `
+		<div>
+		<a-page-header
+			style="border: 1px solid rgb(235, 237, 240)"
+			:title="'Решения задачи ' + sol.taskName"
+			@@back="() => $router.go(-1)"
+		>
+			<template slot="extra">
+				<a-upload
+					name="file"
+					accept="application/x-zip-compressed"
+					:customRequest="customRequest"
+					:fileList="fileList"
+					v-on:change="handleFileUpload"
+				>
+				<a-button type="dashed" :disabled="!sol.canSend"> <a-icon type="upload" /> Загрузите .zip файл с проектом VisualStudio </a-button>
+				</a-upload>
+			</template>
+
+		<a-descriptions size="small" :column="4">
+			<a-descriptions-item>
+				<a-statistic title="Итоговая оценка" :value="sol.totalScore"/>
+			</a-descriptions-item>
+			<a-descriptions-item>
+				<a-statistic title="Итоговый вердикт" :value="sol.result" :value-style="sol.valueStyle"/>
+			</a-descriptions-item>
+			<a-descriptions-item>
+				<a-statistic title="Попытки" :value="sol.solutions.length">
+					<template #suffix>
+						<span> / {{sol.numberOfAttempts}}</span>
+					</template>
+				</a-statistic>
+			</a-descriptions-item>
+			<a-descriptions-item>
+				<a-statistic-countdown
+					title="Осталось времени"
+					:value="sol.deadline"
+					@@finish="onFinish"
+				/>
+			</a-descriptions-item>
+		</a-descriptions>
+		</a-page-header>
+		<a-card title="Условие задачи" style="white-space: pre-line">
+            {{sol.description}}
+        </a-card>
+		<a-card title="Отправленные решения">
+            <a-table :columns="columns" :data-source="sol.solutions" :scroll="{ x: 1500, y: 300 }" size="small">
+				<span slot="time" slot-scope="item">
+					{{prettyPrintTime(item.time)}}
+				</span>
+				<span slot="results" slot-scope="item">
+					<a-tag
+						:color="item.result === 'OK' ? 'green' : 'volcano'"
+					>
+						{{item.result}}
+					</a-tag>
+				</span>
+				<a :href="'./ViewSolutionReport?id='+item.id" slot="action" slot-scope="item"><a-button :disabled="sol.canSend" type="dashed">Отчёт</a-button></a>
+			</a-table>
+        </a-card>
+	</div>
+		`
+});
+    </script>
+}

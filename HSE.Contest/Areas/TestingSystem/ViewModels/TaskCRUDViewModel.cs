@@ -29,6 +29,7 @@ namespace HSE.Contest.Areas.TestingSystem.ViewModels
         public int GroupId { get; set; }
         public List<DateTime> Time { get; set; }
         public bool IsContest { get; set; }
+        public int AttemptsNumber { get; set; }
         public List<TestViewModel> Tests { get; set; }
 
         public TaskViewModelNew(int groupId)
@@ -39,6 +40,7 @@ namespace HSE.Contest.Areas.TestingSystem.ViewModels
             Time = new List<DateTime> { DateTime.Now, DateTime.Now.AddDays(1) };
             IsContest = false;
             Tests = new List<TestViewModel>();
+            AttemptsNumber = 1;
         }
 
         public TaskViewModelNew(StudentTask task)
@@ -49,6 +51,7 @@ namespace HSE.Contest.Areas.TestingSystem.ViewModels
             GroupId = task.GroupId.Value;
             Time = new List<DateTime> { task.From, task.To };
             IsContest = task.IsContest;
+            AttemptsNumber = task.NumberOfAttempts;
 
             Tests = task.Tests.Select(t => new TestViewModel(t, task.Tests.IndexOf(t))).ToList();
         }
