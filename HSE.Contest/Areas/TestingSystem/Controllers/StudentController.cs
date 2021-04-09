@@ -1,8 +1,10 @@
 ﻿using HSE.Contest.Areas.TestingSystem.ViewModels;
+using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
@@ -18,8 +20,6 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
     [Area("TestingSystem")]
     public class StudentController : TestingSystemController
     {
-
-        readonly string solutionsDir;
         public StudentController() : base()
         {
         }
@@ -45,14 +45,35 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public IActionResult SendStudentSolution(int id)
         {
-            var t = db.StudentTasks.Find(id);
+            var res = GetStudentTaskView(id);
 
-            if (t is null)
+            if (res is null)
             {
                 return NotFound();
             }
 
-            var solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == id).Select(s =>
+            //JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+            //{
+            //    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            //    DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind
+            //};
+
+            //return Content(JsonConvert.SerializeObject(res, serializerSettings));
+
+            return View(res);
+        }
+
+        StudentTaskViewModel GetStudentTaskView(int id)
+        {
+            var t = db.StudentTasks.Find(id);
+
+            if (t is null)
+            {
+                return null;
+            }
+
+            var solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == id).ToArray();
+            var solutionsViewModels = solutions.Select(s =>
             new SolutionViewModel
             {
                 Id = s.Id,
@@ -67,40 +88,49 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 TaskId = t.Id,
                 TaskName = t.Name,
                 Description = t.TaskText,
-                Solutions = solutions,
+                Solutions = solutionsViewModels,
                 Deadline = t.To,
                 NumberOfAttempts = t.NumberOfAttempts,
-                CanSend = true,
-                Result = "Нет решений"
+                CanSend = CanSend(t, solutions),
+                Result = "Нет решений",
+                FrameworkTypes = config.CompilerImages.Keys.ToArray()
             };
 
             if (solutions.Length > 0)
             {
-                var maxScore = solutions.Max(s => s.TotalScore);
+                var maxScore = solutionsViewModels.Max(s => s.TotalScore);
 
-                var selectedSolution = solutions.Where(s => s.TotalScore == maxScore).OrderByDescending(s => s.Time).First();
+                var selectedSolution = solutionsViewModels.Where(s => s.TotalScore == maxScore).OrderByDescending(s => s.Time).First();
 
                 res.TotalScore = selectedSolution.TotalScore;
                 res.Result = selectedSolution.Result;
+            }
 
-                if (t.IsContest)
+            return res;          
+        }
+
+        bool CanSend(StudentTask task, Solution[] solutions = null)
+        {
+            bool canSend = false;
+
+            if (task.To > DateTime.Now)
+            {
+                if (solutions is null)
                 {
-                    res.CanSend = solutions.Length < t.NumberOfAttempts;
+                    solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == task.Id).ToArray();
+                }
+
+                if (task.IsContest)
+                {
+                    canSend = solutions.Length < task.NumberOfAttempts;
                 }
                 else
                 {
-                    res.CanSend = false;
+                    canSend = solutions.Length == 0;
                 }
             }
 
-            //JsonSerializerSettings serializerSettings = new JsonSerializerSettings
-            //{
-            //    ContractResolver = new CamelCasePropertyNamesContractResolver(),
-            //    DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind
-            //};
-
-            //return Content(JsonConvert.SerializeObject(res, serializerSettings));
-            return View(res);
+            return canSend;
         }
 
         public IActionResult ViewSolutionReport(int id)
@@ -113,17 +143,8 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             }
 
             var t = db.StudentTasks.Find(s.TaskId);
-
-            bool canSee = true;
-
-            if (t.To >= DateTime.Now && t.IsContest)
-            {
-                var solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == id).ToArray();
-
-                canSee = solutions.Length >= t.NumberOfAttempts;
-            }
-
-            if (!canSee)
+           
+            if (CanSend(t))
             {
                 return Forbid();
             }
@@ -149,7 +170,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             return View(res);
         }
 
-        public async Task<IActionResult> CheckSolution(IFormFile file, int taskId)
+        public async Task<IActionResult> CheckSolution(IFormFile file, int taskId, string framework)
         {
             var task = db.StudentTasks.Find(taskId);
 
@@ -161,44 +182,39 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     data = "No task found!"
                 };
                 return Json(response1);
-            }
+            }            
 
-            if (task.To < DateTime.Now)
+            if (!CanSend(task))
             {
                 var response2 = new
                 {
                     status = "error",
-                    data = "Time is up!"
+                    data = "Can't send new solutions!"
                 };
                 return Json(response2);
             }
-
+            
             if (file != null)
             {
-                string dirPath = "";
+                string dirPath = "c:/TemporaryTaskDownloads";
 
-                var solution = db.Solutions.FirstOrDefault(s => s.StudentId == GetId() && s.TaskId == taskId);
-
-                if (solution == null)
+                dirPath += "/" + Guid.NewGuid().ToString();
+                while (Directory.Exists(dirPath))
                 {
-                    string fileName = String.Join('.', file.FileName.Split('.').TakeWhile(s => s != "zip"));
-                    dirPath = solutionsDir + taskId.ToString() + "/" + GetId().ToString() + "/";
-                }
-
-                if (Directory.Exists(dirPath))
-                {
-                    Directory.Delete(dirPath, true);
+                    dirPath += "/" + Guid.NewGuid().ToString();
                 }
 
                 var dir = Directory.CreateDirectory(dirPath);
-                string fullPath = dirPath + file.FileName;
+
+                string fullZipFilePath = dirPath + "/" + file.FileName;
+                string fullDirPath = dirPath + "/unpacked";
 
                 // сохраняем файл в папку
-                using (var fileStream = new FileStream(fullPath, FileMode.Create))
+                using (var fileStream = new FileStream(fullZipFilePath, FileMode.Create))
                 {
                     await file.CopyToAsync(fileStream);
                 }
-                ZipFile.ExtractToDirectory(fullPath, dirPath, true);
+                ZipFile.ExtractToDirectory(fullZipFilePath, fullDirPath, true);
 
                 var pathToProj = FindProjectFile(dir);
 
@@ -211,12 +227,45 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     };
                     return Json(response2);
                 }
-                bool res = false;
-                //var result = await SolutionTester.TestSolution(wwwroot, task, pathToProj, config);
 
-                //bool res = WriteResultToDb(solution, result, taskId, dirPath);
+                CleanSolutionFiles(fullDirPath);
 
-                if (!res)
+                string newfullZipFilePath = dirPath + "/cleaned_" + file.FileName;
+                ZipFile.CreateFromDirectory(fullDirPath, newfullZipFilePath);
+
+                var dataBytes = System.IO.File.ReadAllBytes(newfullZipFilePath);
+
+                int fileId = db.UploadFile(file.FileName, dataBytes);
+
+                if (fileId == -1)
+                {
+                     var response2 = new
+                    {
+                        status = "error",
+                        data = "Can't upload file to db!"
+                    };
+                    return Json(response2);
+                }
+
+                dir.Delete(true);
+
+                var solution = new Solution
+                {
+                    TaskId = taskId,
+                    FrameworkType = framework,
+                    FileId = fileId,
+                    StudentId = GetId(),
+                    ResultCode = ResultCode.NT,
+                    Time = DateTime.Now,
+                };
+
+                var x = db.Solutions.Add(solution);
+                var beforeState = x.State;
+                int r = db.SaveChanges();
+                var afterState = x.State;
+                bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
+            
+                if (!ok)
                 {
                     var response2 = new
                     {
@@ -242,6 +291,74 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             return Json(response);
         }
 
+        public IActionResult CheckForUpdates(string ids, int taskId)
+        {
+            int[] solIds = JsonConvert.DeserializeObject<int[]>(ids);
+
+            foreach(var id in solIds)
+            {
+                var s = db.Solutions.Find(id);
+
+                if(s != null && s.ResultCode != ResultCode.NT)
+                {
+                    var res = GetStudentTaskView(taskId);
+                    
+                    //JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+                    //{
+                    //    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                    //    DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind
+                    //};
+
+                    //var data = JsonConvert.SerializeObject(res, serializerSettings);
+
+                    var response1 = new
+                    {
+                        status = "success",
+                        //data = "./SendStudentSolution?id=" + taskId.ToString()
+                        data = res
+                    };
+                    return Json(response1);
+                }
+            }
+
+            var response2 = new
+            {
+                status = "error",
+            };
+            return Json(response2);
+        }
+
+        void CleanSolutionFiles(string dir)
+        {
+            string gitignorePath = pathToConfigDir + "\\.gitignore";
+            var patterns = System.IO.File.ReadAllLines(gitignorePath).Where(l => !string.IsNullOrEmpty(l) && !l.StartsWith("#")).ToList();
+
+
+            var dirsToDelete = new List<string>();
+            var dirs = new string[] { "bin", "obj", ".vs" };
+
+            foreach(var dirr in dirs)
+            {
+                dirsToDelete.AddRange(Directory.GetDirectories(dir, dirr, SearchOption.AllDirectories));
+            }
+
+            foreach(var dirr in dirsToDelete)
+            {
+                Directory.Delete(dirr, true);
+            }
+
+            var filesToDelete = new List<string>();
+            foreach (var pattern in patterns)
+            {
+                var files = Directory.GetFiles(dir, pattern, SearchOption.AllDirectories);
+                filesToDelete.AddRange(files);
+            }
+
+            foreach (var file in filesToDelete)
+            {
+                System.IO.File.Delete(file);
+            }
+        }
         //bool WriteResultToDb(Solution solution, AllTestsResult result, int taskId, string solPath)
         //{
         //    if (solution == null)

@@ -13,6 +13,7 @@ namespace HSE.Contest.Areas.TestingSystem.ViewModels
         public SolutionViewModel[] Solutions { get; set; }
         public bool CanSend { get; set; }
         public int NumberOfAttempts { get; set; }
+        public string[] FrameworkTypes { get; set; }
     }
 
     public class SolutionViewModel

@@ -10,25 +10,61 @@
 
 @section Scripts{
 <script>
-const sol = @Html.Raw(Json.Serialize(Model));
-sol.deadline = moment(sol.deadline);
+const sol = {"data": @Html.Raw(Json.Serialize(Model))};
+sol.data.deadline = moment(sol.data.deadline);
 //sol.deadline = moment().add(5, 's');
 
-if(sol.result == 'OK'){
-	sol.valueStyle = { color: '#3f8600' };
+    const timerId = setInterval(function () {
+        loadData();
+	}, 5000);
+
+	loadData = function () {
+		const data = new FormData();
+		const ids = sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
+		data.append('ids', JSON.stringify(ids));
+		data.append('taskId', sol.data.taskId);
+
+		var http = new XMLHttpRequest();
+		var url = './CheckForUpdates';
+
+		http.open('POST', url, true);
+
+		//Send the proper header information along with the request
+		//http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+		http.onreadystatechange = () => {//Call a function when the state changes.
+			if (http.readyState == 4 && http.status == 200) {
+				const response = JSON.parse(http.responseText);
+				if (response.status && response.status != 'error') {
+					sol.data = response.data;
+					sol.data.deadline = moment(sol.data.deadline);
+
+					const ids = sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
+					if (ids.length == 0) {
+						clearInterval(timerId);
+                    }
+				}
+			}
+		}
+		http.send(data);
+	};
+
+if(sol.data.result == 'OK'){
+	sol.data.valueStyle = { color: '#3f8600' };
 }
 else{
-	sol.valueStyle ={ color: '#cf1322' };
+	sol.data.valueStyle ={ color: '#cf1322' };
 }
 
 new Vue({
 	el: '#app',
 	data: {
 		sol: sol,
-		fileList: [],
+        fileList: [],
+        selFramework: sol.data.frameworkTypes[0],
 		columns: [
 			{ title: 'Время', width: 100, key: 'time', scopedSlots: { customRender: 'time' }},
-			{ title: 'Оценка', width: 100, dataIndex: 'totalScore', key: 'totalScore' },
+            { title: 'Оценка', width: 100, key: 'totalScore', scopedSlots: { customRender: 'totalScore' } },
 			{ title: 'Вердикт', width: 100, key: 'result', scopedSlots: { customRender: 'results' }},
 			{ title: 'Отчёт', key: 'operation', width: 100, scopedSlots: { customRender: 'action' }},
 		]
@@ -49,10 +85,11 @@ new Vue({
 			fileList = fileList.slice(-1);
 			this.fileList = fileList;
 		},
-		customRequest(options){
+		customRequest(options) {
 			const data = new FormData();
 			data.append('file', options.file);
-			data.append('taskId', this.sol.taskId);
+			data.append('taskId', this.sol.data.taskId);
+			data.append('framework', this.selFramework);
 
 			var http = new XMLHttpRequest();
 			var url = './CheckSolution';
@@ -69,28 +106,36 @@ new Vue({
 						document.location.href = response.data;
 					}
 					else {
-						this.$message.error('An error occured. Try again! Error: ' + response.data);
+						this.$message.error('An error occured: ' + response.data);
 					}
 				}
 			}
 			http.send(data);
-		 },
-		onFinish: function(){
-			this.$message.error(`Время вышло!`);
-			this.sol.canSend = false;
 		},
-		prettyPrintTime(timeStr){
+		onFinish: function () {
+			this.$message.error(`Время вышло!`);
+			this.sol.data.canSend = false;
+		},
+		prettyPrintTime(timeStr) {
 			return moment(timeStr).format("dddd, MMMM Do YYYY, h:mm:ss a");
-		}
+		}		
 	},
+    
 	template: `
 		<div>
 		<a-page-header
 			style="border: 1px solid rgb(235, 237, 240)"
-			:title="'Решения задачи ' + sol.taskName"
+			:title="'Решения задачи ' + sol.data.taskName"
 			@@back="() => $router.go(-1)"
 		>
 			<template slot="extra">
+				<a-select  v-model="selFramework" key="2">
+					<a-select-option
+						v-for="(item, index) in sol.data.frameworkTypes"
+						:key="index"
+						:value="item">  {{item}}
+					</a-select-option>
+					</a-select>
 				<a-upload
 					name="file"
 					accept="application/x-zip-compressed"
@@ -98,49 +143,62 @@ new Vue({
 					:fileList="fileList"
 					v-on:change="handleFileUpload"
 				>
-				<a-button type="dashed" :disabled="!sol.canSend"> <a-icon type="upload" /> Загрузите .zip файл с проектом VisualStudio </a-button>
+				<a-button type="dashed" :disabled="!sol.data.canSend" key="1"> <a-icon type="upload" /> Загрузите .zip файл с проектом VisualStudio </a-button>
 				</a-upload>
 			</template>
 
 		<a-descriptions size="small" :column="4">
 			<a-descriptions-item>
-				<a-statistic title="Итоговая оценка" :value="sol.totalScore"/>
+				<a-statistic title="Итоговая оценка" :value="sol.data.totalScore"/>
 			</a-descriptions-item>
 			<a-descriptions-item>
-				<a-statistic title="Итоговый вердикт" :value="sol.result" :value-style="sol.valueStyle"/>
+				<a-statistic title="Итоговый вердикт" :value="sol.data.result" :value-style="sol.data.valueStyle"/>
 			</a-descriptions-item>
 			<a-descriptions-item>
-				<a-statistic title="Попытки" :value="sol.solutions.length">
+				<a-statistic title="Попытки" :value="sol.data.solutions.length">
 					<template #suffix>
-						<span> / {{sol.numberOfAttempts}}</span>
+						<span> / {{sol.data.numberOfAttempts}}</span>
 					</template>
 				</a-statistic>
 			</a-descriptions-item>
 			<a-descriptions-item>
 				<a-statistic-countdown
 					title="Осталось времени"
-					:value="sol.deadline"
+					:value="sol.data.deadline"
 					@@finish="onFinish"
 				/>
 			</a-descriptions-item>
 		</a-descriptions>
 		</a-page-header>
 		<a-card title="Условие задачи" style="white-space: pre-line">
-            {{sol.description}}
+            {{sol.data.description}}
         </a-card>
 		<a-card title="Отправленные решения">
-            <a-table :columns="columns" :data-source="sol.solutions" :scroll="{ x: 1500, y: 300 }" size="small">
+            <a-table :columns="columns" :data-source="sol.data.solutions" :scroll="{ x: 1500, y: 300 }" size="small">
 				<span slot="time" slot-scope="item">
 					{{prettyPrintTime(item.time)}}
 				</span>
 				<span slot="results" slot-scope="item">
-					<a-tag
-						:color="item.result === 'OK' ? 'green' : 'volcano'"
-					>
-						{{item.result}}
-					</a-tag>
+					<div v-if="item.result == 'NT'">
+						<a-spin tip="Тестируется..."/>
+					</div>
+					<div v-else>
+						<a-tag
+							:color="item.result === 'OK' ? 'green' : 'volcano'"
+						>
+							{{item.result}}
+						</a-tag>
+					</div>
 				</span>
-				<a :href="'./ViewSolutionReport?id='+item.id" slot="action" slot-scope="item"><a-button :disabled="sol.canSend" type="dashed">Отчёт</a-button></a>
+				<span slot="totalScore" slot-scope="item">
+					<div v-if="item.result == 'NT'">
+						<a-spin tip="Тестируется..."/>
+					</div>
+					<div v-else>
+						{{item.totalScore}}
+					</div>
+				</span>
+				<a :href="'./ViewSolutionReport?id='+item.id" slot="action" slot-scope="item"><a-button :disabled="sol.data.canSend || item.result == 'NT'" type="dashed">Отчёт</a-button></a>
 			</a-table>
         </a-card>
 	</div>

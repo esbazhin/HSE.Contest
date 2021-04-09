@@ -13,10 +13,12 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
     {
         protected readonly HSEContestDbContext db;
         protected readonly TestingSystemConfig config;
+        protected readonly string pathToConfigDir;
 
         public TestingSystemController()
         {
-            string pathToConfig = "c:\\config\\config.json";
+            pathToConfigDir = "c:\\config";
+            string pathToConfig = pathToConfigDir + "\\config.json";
             config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
 
             DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();

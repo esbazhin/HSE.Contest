@@ -20,7 +20,19 @@ namespace HSE.Contest
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseStartup<Startup>();
+                    webBuilder
+                    //.ConfigureKestrel(serverOptions =>
+                    //{
+                    //    serverOptions.Limits.MaxConcurrentConnections = 100;
+                    //    serverOptions.Limits.MaxConcurrentUpgradedConnections = 100;
+                    //    serverOptions.Limits.MaxRequestBodySize = 100 * 1024;
+                        
+                    //    serverOptions.Limits.KeepAliveTimeout =
+                    //        TimeSpan.FromMinutes(60);
+                    //    serverOptions.Limits.RequestHeadersTimeout =
+                    //        TimeSpan.FromMinutes(30);
+                    //})
+                    .UseStartup<Startup>();
                 });
     }
 }
