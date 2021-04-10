@@ -12,48 +12,22 @@
 <script>
 const sol = {"data": @Html.Raw(Json.Serialize(Model))};
 sol.data.deadline = moment(sol.data.deadline);
-//sol.deadline = moment().add(5, 's');
 
-    const timerId = setInterval(function () {
-        loadData();
-	}, 5000);
+const ids = sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
+var source = new EventSource('./SSE?taskId=' + sol.data.taskId + '&ids=' + JSON.stringify(ids));
 
-	loadData = function () {
-		const data = new FormData();
-		const ids = sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
-		data.append('ids', JSON.stringify(ids));
-		data.append('taskId', sol.data.taskId);
+source.onmessage = function (event) {
+	console.log('onmessage');
+	sol.data = JSON.parse(event.data);
+    sol.data.deadline = moment(sol.data.deadline);
+};
 
-		var http = new XMLHttpRequest();
-		var url = './CheckForUpdates';
+source.onopen = function (event) {
+    console.log('onopen');
+};
 
-		http.open('POST', url, true);
-
-		//Send the proper header information along with the request
-		//http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-
-		http.onreadystatechange = () => {//Call a function when the state changes.
-			if (http.readyState == 4 && http.status == 200) {
-				const response = JSON.parse(http.responseText);
-				if (response.status && response.status != 'error') {
-					sol.data = response.data;
-					sol.data.deadline = moment(sol.data.deadline);
-
-					const ids = sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
-					if (ids.length == 0) {
-						clearInterval(timerId);
-                    }
-				}
-			}
-		}
-		http.send(data);
-	};
-
-if(sol.data.result == 'OK'){
-	sol.data.valueStyle = { color: '#3f8600' };
-}
-else{
-	sol.data.valueStyle ={ color: '#cf1322' };
+source.onerror = function (event) {
+    console.log('onerror');
 }
 
 new Vue({
@@ -116,6 +90,14 @@ new Vue({
 			this.$message.error(`Время вышло!`);
 			this.sol.data.canSend = false;
 		},
+        getValueStyle(res) {
+            if (res == 'OK') {
+                return { color: '#3f8600' };
+            }
+            else {
+                return { color: '#cf1322' };
+            }
+        },
 		prettyPrintTime(timeStr) {
 			return moment(timeStr).format("dddd, MMMM Do YYYY, h:mm:ss a");
 		}		
@@ -152,7 +134,7 @@ new Vue({
 				<a-statistic title="Итоговая оценка" :value="sol.data.totalScore"/>
 			</a-descriptions-item>
 			<a-descriptions-item>
-				<a-statistic title="Итоговый вердикт" :value="sol.data.result" :value-style="sol.data.valueStyle"/>
+				<a-statistic title="Итоговый вердикт" :value="sol.data.result" :value-style="getValueStyle(sol.data.result)"/>
 			</a-descriptions-item>
 			<a-descriptions-item>
 				<a-statistic title="Попытки" :value="sol.data.solutions.length">

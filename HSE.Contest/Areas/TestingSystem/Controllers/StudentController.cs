@@ -328,6 +328,63 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             return Json(response2);
         }
 
+        public async Task SSE(string ids, int taskId)
+        {
+            int[] solIds = JsonConvert.DeserializeObject<int[]>(ids);
+            var response = Response;
+            response.Headers.Add("Content-Type", "text/event-stream");
+
+            var curState = new Dictionary<int, ResultCode>();
+
+            foreach (var id in solIds)
+            {
+                var s = db.Solutions.Find(id);
+
+                if (s != null)
+                {
+                    curState[id] = s.ResultCode;
+                }
+            }
+
+            while (true)
+            {
+                bool update = false;
+                foreach (var id in solIds)
+                {                    
+                    var s = db.Solutions.Find(id);
+                    db.Entry(s).Reload();
+
+                    if (s != null && s.ResultCode != ResultCode.NT && curState[id] == ResultCode.NT)
+                    {
+                        curState[id] = s.ResultCode;
+                        update = true;
+                        break;
+                    }
+                }    
+                
+                if(update)
+                {
+                    solIds = solIds.Where(i => curState[i] == ResultCode.NT).ToArray();
+
+                    var res = GetStudentTaskView(taskId);
+
+                    JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+                    {
+                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                        DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind
+                    };
+
+                    var data = JsonConvert.SerializeObject(res, serializerSettings);
+
+                    await response
+                        .WriteAsync("data:" + data + "\n\n");
+                    response.Body.Flush();
+                }
+
+                await Task.Delay(5 * 1000);
+            }
+        }
+
         void CleanSolutionFiles(string dir)
         {
             string gitignorePath = pathToConfigDir + "\\.gitignore";
