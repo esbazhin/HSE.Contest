@@ -1,6 +1,8 @@
 ﻿using HSE.Contest.Areas.TestingSystem.ViewModels;
 using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.Communication.Requests;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
+using HSE.Contest.ClassLibrary.RabbitMQ;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,13 +23,24 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
     public class StudentController : TestingSystemController
     {
         public StudentController() : base()
-        {
+        {           
         }
 
         public IActionResult Index()
         {
             return RedirectToAction("AllTasks");
-        }
+        }       
+
+        //public async Task<IActionResult> Receive()
+        //{
+        //    IActionResult res = Content("empty");
+        //    await msgQueue.ReceiveAsync<TestRequest>("check", x =>
+        //    {
+        //        res = Json(x);
+        //    });
+
+        //    return res;
+        //}
 
         public IActionResult AllTasks()
         {
@@ -63,16 +76,16 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             return View(res);
         }
 
-        StudentTaskViewModel GetStudentTaskView(int id)
+        StudentTaskViewModel GetStudentTaskView(int taskId)
         {
-            var t = db.StudentTasks.Find(id);
+            var t = db.StudentTasks.Find(taskId);
 
             if (t is null)
             {
                 return null;
             }
 
-            var solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == id).ToArray();
+            var solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == taskId).ToArray();
             var solutionsViewModels = solutions.Select(s =>
             new SolutionViewModel
             {
@@ -171,7 +184,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         }
 
         public async Task<IActionResult> CheckSolution(IFormFile file, int taskId, string framework)
-        {
+        {            
             var task = db.StudentTasks.Find(taskId);
 
             if (task == null)
@@ -275,20 +288,41 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     return Json(response2);
                 }
 
-                var response1 = new
+                try
+                {
+                    var msgQueue = RabbitHutch.CreateBus(config.MessageQueueInfo, config.FrontEnd);
+
+                    var request = new SolutionTestingRequest
+                    {
+                        SolutionId = solution.Id,
+                    };
+                    await msgQueue.SendAsync(config.MessageQueueInfo.TestingQueueName, request);
+                }
+                catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException e)
+                {
+                    var response1 = new
+                    {
+                        status = "connectionError",
+                        msg = "Can't connect to RabbitMQ!",
+                        data = GetStudentTaskView(taskId)
+                    };
+                    return Json(response1);
+                }
+
+                var response = new
                 {
                     status = "success",
-                    data = "./SendStudentSolution?id=" + taskId.ToString()
+                    data = GetStudentTaskView(taskId)
                 };
-                return Json(response1);
+                return Json(response);
             }
 
-            var response = new
+            var response3 = new
             {
                 status = "error",
                 data = "Error while sending file!"
             };
-            return Json(response);
+            return Json(response3);
         }
 
         public IActionResult CheckForUpdates(string ids, int taskId)

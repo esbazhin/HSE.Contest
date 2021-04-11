@@ -275,7 +275,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                         Framework = framework
                     };
 
-                    string url = config.CompilerServicesOrchestrator.GetFullTaskLinkFrom(config.TestingSystem);
+                    string url = config.CompilerServicesOrchestrator.GetFullTaskLinkFrom(config.FrontEnd);
                     using var httpClient = new HttpClient();
                     using var form = JsonContent.Create(req);
                     HttpResponseMessage response = await httpClient.PostAsync(url, form);
@@ -389,7 +389,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             using var httpClient = new HttpClient();
 
-            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this.config.TestingSystem) + "/health");
+            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this.config.FrontEnd) + "/health");
 
             if (response.IsSuccessStatusCode)
             {

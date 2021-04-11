@@ -9,7 +9,7 @@
 <div id="app"></div>
 
 @section Scripts{
-<script>
+    <script>
 const sol = {"data": @Html.Raw(Json.Serialize(Model))};
 sol.data.deadline = moment(sol.data.deadline);
 
@@ -45,19 +45,22 @@ new Vue({
 	},
 	methods: {
 		handleFileUpload(info) {
-			if (info.file.status === 'done' && info.file.response && info.file.response.status == 'success') {
+			if (info.file.status === 'done') {
 				this.$message.success(`${info.file.name} file uploaded successfully`);
-			} else if (info.file.status === 'done' && info.file.response && info.file.response.status == 'error') {
-				this.$message.error(`Error occured! ${info.file.response.data}`);
-			} else if (info.file.status === 'error') {
-				this.$message.error(`${info.file.name} file upload failed.`);
+			} else if (info.file.status === 'error' && info.file.error.status === 'error') {
+				this.$message.error(`${info.file.name} file upload failed. An error occured: ` + info.file.error.data);
+				info.file.response = info.file.error.data;
+			} else if (info.file.status === 'error' && info.file.error.status === 'connectionError') {
+				this.$message.error(`${info.file.name} file upload failed. An error occured: ` + info.file.error.msg);
+				info.file.response = info.file.error.msg;
 			}
-			let fileList = [...info.fileList];
+			//let fileList = [...info.fileList];
 
 			// 1. Limit the number of uploaded files
 			//    Only to show two recent uploaded files, and old ones will be replaced by the new
-			fileList = fileList.slice(-1);
-			this.fileList = fileList;
+			//fileList = fileList.slice(-1);
+			//this.fileList = fileList;
+			this.fileList = [info.file];
 		},
 		customRequest(options) {
 			const data = new FormData();
@@ -76,12 +79,21 @@ new Vue({
 			http.onreadystatechange = () => {//Call a function when the state changes.
 				if (http.readyState == 4 && http.status == 200) {
 					const response = JSON.parse(http.responseText);
-					if (response.status && response.status != 'error') {
-						document.location.href = response.data;
+					if (response.status && response.status == 'success') {
+						//document.location.href = response.data;
+                        this.sol.data = response.data;
+						this.sol.data.deadline = moment(sol.data.deadline);
+                        options.onSuccess(response, options.File);
 					}
+                    else if (response.status && response.status == 'connectionError'){
+                        this.sol.data = response.data;
+                        this.sol.data.deadline = moment(sol.data.deadline);
+                        options.onError(response, options.File);
+                    }
 					else {
-						this.$message.error('An error occured: ' + response.data);
+						options.onError(response, options.File);
 					}
+					
 				}
 			}
 			http.send(data);
@@ -100,9 +112,9 @@ new Vue({
         },
 		prettyPrintTime(timeStr) {
 			return moment(timeStr).format("dddd, MMMM Do YYYY, h:mm:ss a");
-		}		
+		}
 	},
-    
+
 	template: `
 		<div>
 		<a-page-header
@@ -123,7 +135,7 @@ new Vue({
 					accept="application/x-zip-compressed"
 					:customRequest="customRequest"
 					:fileList="fileList"
-					v-on:change="handleFileUpload"
+					@@change="handleFileUpload"
 				>
 				<a-button type="dashed" :disabled="!sol.data.canSend" key="1"> <a-icon type="upload" /> Загрузите .zip файл с проектом VisualStudio </a-button>
 				</a-upload>

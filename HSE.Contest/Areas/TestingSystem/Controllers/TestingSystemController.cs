@@ -22,7 +22,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
 
             DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.TestingSystem));
+            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
             db = new HSEContestDbContext(options.Options);
         }
 

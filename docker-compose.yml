@@ -3,17 +3,17 @@ version: '3.4'
 services:
   testingsystemservice:
     image: ${DOCKER_REGISTRY-}testingsystemservice
+    restart: always
     build:
       context: .
       dockerfile: TestingSystemService\Dockerfile
-    ports:
-      - "1337:80"
     volumes:
       - c:\config:c:\config:ro
 
 
   compilerservicesorchestrator:
     image: ${DOCKER_REGISTRY-}compilerservicesorchestrator
+    restart: always
     build:
       context: .
       dockerfile: CompilerServicesOrchestrator\Dockerfile
@@ -28,6 +28,7 @@ services:
 
   reflectiontesterservice:
     image: ${DOCKER_REGISTRY-}reflectiontesterservice
+    restart: always
     build:
       context: .
       dockerfile: ReflectionTesterService\Dockerfile
@@ -39,6 +40,7 @@ services:
 
   functionaltestingservicesorchestrator:
     image: ${DOCKER_REGISTRY-}functionaltestingservicesorchestrator
+    restart: always
     build:
       context: .
       dockerfile: FunctionalTestingServicesOrchestrator\Dockerfile
@@ -52,6 +54,7 @@ services:
 
   codestyletesterservice:
     image: ${DOCKER_REGISTRY-}codestyletesterservice
+    restart: always
     build:
       context: .
       dockerfile: CodeStyleTesterService\Dockerfile
@@ -62,6 +65,7 @@ services:
 
   hse.contest:
     image: ${DOCKER_REGISTRY-}hsecontest
+    restart: always
     build:
       context: .
       dockerfile: HSE.Contest\Dockerfile

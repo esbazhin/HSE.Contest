@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HSE.Contest.ClassLibrary", "HSE.Contest.ClassLibrary\HSE.Contest.ClassLibrary.csproj", "{B18701B1-18A8-49F7-96FF-D29737DE418B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestingSystemService", "TestingSystemService\TestingSystemService.csproj", "{AB464678-37D3-429C-9310-E4FBD4ED8244}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CompilationServices", "CompilationServices", "{82831A48-2846-43B4-841C-AC34302CB719}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CompilerServicesOrchestrator", "CompilerServicesOrchestrator\CompilerServicesOrchestrator.csproj", "{B368597D-059B-42BE-BDB0-A6B7221A5541}"
@@ -29,7 +27,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeStyleTesterService", "C
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{87E825A9-4025-48AF-82AC-C41B01ACC36E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HSE.Contest", "HSE.Contest\HSE.Contest.csproj", "{05145F61-DE40-4DCE-BEE9-328EBAB8F71F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HSE.Contest", "HSE.Contest\HSE.Contest.csproj", "{05145F61-DE40-4DCE-BEE9-328EBAB8F71F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestingSystemService", "TestingSystemService\TestingSystemService.csproj", "{C1592DAE-8506-4ADF-883B-D49FE8088FAA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +41,6 @@ Global
 		{B18701B1-18A8-49F7-96FF-D29737DE418B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B18701B1-18A8-49F7-96FF-D29737DE418B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B18701B1-18A8-49F7-96FF-D29737DE418B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AB464678-37D3-429C-9310-E4FBD4ED8244}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B368597D-059B-42BE-BDB0-A6B7221A5541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B368597D-059B-42BE-BDB0-A6B7221A5541}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B368597D-059B-42BE-BDB0-A6B7221A5541}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -85,6 +81,10 @@ Global
 		{05145F61-DE40-4DCE-BEE9-328EBAB8F71F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{05145F61-DE40-4DCE-BEE9-328EBAB8F71F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{05145F61-DE40-4DCE-BEE9-328EBAB8F71F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1592DAE-8506-4ADF-883B-D49FE8088FAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1592DAE-8506-4ADF-883B-D49FE8088FAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1592DAE-8506-4ADF-883B-D49FE8088FAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1592DAE-8506-4ADF-883B-D49FE8088FAA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

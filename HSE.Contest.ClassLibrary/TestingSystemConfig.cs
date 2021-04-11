@@ -5,7 +5,10 @@ namespace HSE.Contest.ClassLibrary
     public class TestingSystemConfig
     {
         public DbConfig DatabaseInfo { get; set; }
-        public ServiceConfig TestingSystem { get; set; }
+
+        public RabbitMQConfig MessageQueueInfo { get; set; }
+        public ContainerConfig FrontEnd { get; set; }
+        public ContainerConfig TestingSystemWorker { get; set; }
         public ServiceConfig CompilerServicesOrchestrator { get; set; }
         public Dictionary<string, ServiceConfig> Tests { get; set; }
         //public ServiceConfig FunctionalTestingServicesOrchestrator { get; set; }
@@ -19,15 +22,14 @@ namespace HSE.Contest.ClassLibrary
         //public ImagesConfig FunctionalTesterImages { get; set; }       
     }
 
-    public class ServiceConfig
+    public class ContainerConfig
     {
         public string Host { private get;  set; }
-        public string Port { get; set; }
-        public string TestActionLink { get; set; }
-        public string TaskActionLink { get; set; }
+        public int Port { get; set; }
+       
         public bool InDocker { get; set; }
 
-        public string GetHost(ServiceConfig service)
+        public string GetHost(ContainerConfig service)
         {
             var host = Host;
             if ((service is null ||service.InDocker) && Host == "localhost")
@@ -38,32 +40,47 @@ namespace HSE.Contest.ClassLibrary
             return host;
         }
 
-        public string GetHostLinkFrom(ServiceConfig service)
+        public string GetHostLinkFrom(ContainerConfig service)
         {            
-            return "http://" + GetHost(service) + ":" + Port;
+            return "http://" + GetHost(service) + ":" + Port.ToString();
         }
 
-        public string GetFullTestLinkFrom(ServiceConfig service)
+        
+    }
+
+    public class ServiceConfig : ContainerConfig
+    {
+        public string TestActionLink { get; set; }
+        public string TaskActionLink { get; set; }
+
+        public string GetFullTestLinkFrom(ContainerConfig service)
         {
             return GetHostLinkFrom(service) + TestActionLink;
         }
 
-        public string GetFullTaskLinkFrom(ServiceConfig service)
+        public string GetFullTaskLinkFrom(ContainerConfig service)
         {
             return GetHostLinkFrom(service) + TaskActionLink;
         }
     }
 
-    public class DbConfig : ServiceConfig
+    public class DbConfig : ContainerConfig
     {
         public string DatabaseName { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
 
-        public string GetConnectionStringFrom(ServiceConfig service)
+        public string GetConnectionStringFrom(ContainerConfig service)
         {
-            return "Host=" + GetHost(service) + ";Port=" + Port + ";Database=" + DatabaseName + ";Username=" + Username + ";Password=" + Password;
+            return "Host=" + GetHost(service) + ";Port=" + Port.ToString() + ";Database=" + DatabaseName + ";Username=" + Username + ";Password=" + Password;
         }
+    }
+
+    public class RabbitMQConfig : ContainerConfig
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string TestingQueueName { get; set; }
     }
 
     //public class ImagesConfig

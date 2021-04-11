@@ -2,108 +2,45 @@
 using HSE.Contest.ClassLibrary.Communication.Requests;
 using HSE.Contest.ClassLibrary.Communication.Responses;
 using HSE.Contest.ClassLibrary.DbClasses;
-using HSE.Contest.ClassLibrary.DbClasses.Files;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+using HSE.Contest.ClassLibrary.RabbitMQ;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace TestingSystemService.Controllers
+namespace TestingSystemService
 {
-    [Route("[controller]/[action]")]
-    [ApiController]
-    public class TestingSystemController : ControllerBase
+    public class TestingSystemWorker : BackgroundService
     {
-        TestingSystemConfig config;
-        HSEContestDbContext db;
-        public TestingSystemController()
+        private readonly IBus _busControl;
+        private readonly TestingSystemConfig config;
+        private readonly HSEContestDbContext db;
+        public TestingSystemWorker()
         {
             string pathToConfig = "c:\\config\\config.json";
             config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
 
             DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.TestingSystem));
+            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.TestingSystemWorker));
             db = new HSEContestDbContext(options.Options);
+
+            _busControl = RabbitHutch.CreateBus(config.MessageQueueInfo, config.TestingSystemWorker);
         }
 
-        [HttpPost]
-        public async Task<TestingSystemResponse> CheckSolutionDebug([FromForm] IFormFile file, [FromForm] int taskId, [FromForm] int studentId, [FromForm] string frameworkType)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            int fileId = db.UploadFile(file.FileName, file.GetBytes().Result);
-
-            if (fileId == -1)
-            {
-                return new TestingSystemResponse
-                {
-                    Message = "error on uploading file"
-                };
-            }
-            var solution = new Solution
-            {
-                TaskId = taskId,
-                FrameworkType = frameworkType,
-                FileId = fileId,
-                StudentId = studentId,
-                ResultCode = ResultCode.NT,
-                Time = DateTime.Now,
-            };
-
-            var x = db.Solutions.Add(solution);
-            var beforeState = x.State;
-            int r = db.SaveChanges();
-            var afterState = x.State;
-            bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
-
-            if (!ok)
-            {
-                return new TestingSystemResponse
-                {
-                    Message = "error on uploading solution"
-                };
-            }
-            return await CheckSolution(solution.Id);
+            await _busControl.ReceiveAsync<SolutionTestingRequest>(config.MessageQueueInfo.TestingQueueName, x => CheckSolution(x).Start());
         }
 
-        [HttpPost]
-        public Response UploadCodeStyleFilesDebug([FromForm] string name, [FromForm] IFormFile stylecop, [FromForm] IFormFile ruleset)
+        public async Task<TestingSystemResponse> CheckSolution(SolutionTestingRequest solutionId)
         {
-            if (stylecop is null || ruleset is null)
-            {
-                return new Response
-                {
-                    OK = false,
-                    Message = "codestyle files are null!"
-                };
-            }
-
-            CodeStyleFiles files = new CodeStyleFiles
-            {
-                Name = name,
-                StyleCopFile = stylecop.GetBytes().Result,
-                RulesetFile = ruleset.GetBytes().Result
-            };
-
-            db.CodeStyleFiles.Add(files);
-            db.SaveChanges();
-
-            return new Response
-            {
-                OK = true,
-                Message = "codestyle files are updated!"
-            };
-        }
-
-        [HttpPost]
-        public async Task<TestingSystemResponse> CheckSolution([FromForm] int solutionId)
-        {
-            var solution = db.Solutions.Find(solutionId);
+            var solution = db.Solutions.Find(solutionId.SolutionId);
 
             if (solution != null && solution.File != null)
             {
@@ -120,11 +57,11 @@ namespace TestingSystemService.Controllers
 
                         var req = new TestRequest
                         {
-                            SolutionId = solutionId,
+                            SolutionId = solutionId.SolutionId,
                             TestId = codeStyleTask is null ? -1 : codeStyleTask.Id
                         };
 
-                        string url = config.CompilerServicesOrchestrator.GetFullTestLinkFrom(config.TestingSystem);
+                        string url = config.CompilerServicesOrchestrator.GetFullTestLinkFrom(config.TestingSystemWorker);
                         using var httpClient = new HttpClient();
                         using var form = JsonContent.Create(req);
                         HttpResponseMessage response = await httpClient.PostAsync(url, form);
@@ -146,11 +83,11 @@ namespace TestingSystemService.Controllers
                                         {
                                             if (config.Tests.ContainsKey(test.TestType))
                                             {
-                                                testTasks.Add(StartTest(test.TestType, solutionId, test.Id));
+                                                testTasks.Add(StartTest(test.TestType, solutionId.SolutionId, test.Id));
                                             }
                                             else
                                             {
-                                                testTasks.Add(Task.Run(() => NoTestFound(test.TestType, solutionId, test.Id)));
+                                                testTasks.Add(Task.Run(() => NoTestFound(test.TestType, solutionId.SolutionId, test.Id)));
                                             }
                                         }
                                         await Task.WhenAll(testTasks);
@@ -165,7 +102,7 @@ namespace TestingSystemService.Controllers
                                         {
                                             if (res.Definition.Block && res.Result.Score == 0)
                                             {
-                                                totalScore = 0;                                              
+                                                totalScore = 0;
 
                                                 break;
                                             }
@@ -175,7 +112,7 @@ namespace TestingSystemService.Controllers
                                             }
                                         }
 
-                                        return WriteToDb(solution, totalResult, totalScore, "success", true, responses);                                       
+                                        return WriteToDb(solution, totalResult, totalScore, "success", true, responses);
                                     }
                                     else
                                     {
@@ -189,18 +126,18 @@ namespace TestingSystemService.Controllers
                             }
                             else
                             {
-                                return WriteToDb(solution, compResponse.Result, 0, "something went wrong during compilation! Inner message: " + compResponse.Message, false);                               
+                                return WriteToDb(solution, compResponse.Result, 0, "something went wrong during compilation! Inner message: " + compResponse.Message, false);
                             }
                         }
                         else
                         {
-                            return WriteToDb(solution, ResultCode.IE, 0, "bad response from compilation container: " + response.StatusCode, false);                           
+                            return WriteToDb(solution, ResultCode.IE, 0, "bad response from compilation container: " + response.StatusCode, false);
                         }
                     }
                 }
                 else
                 {
-                    return WriteToDb(solution, ResultCode.IE, 0, "Compiler Service Is Dead!", false);                    
+                    return WriteToDb(solution, ResultCode.IE, 0, "Compiler Service Is Dead!", false);
                 }
             }
             return WriteToDb(null, ResultCode.IE, 0, "Can't find solution!", false);
@@ -210,7 +147,7 @@ namespace TestingSystemService.Controllers
         {
             using var httpClient = new HttpClient();
 
-            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this.config.TestingSystem) + "/health");
+            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this.config.TestingSystemWorker) + "/health");
 
             if (response.IsSuccessStatusCode)
             {
@@ -239,7 +176,7 @@ namespace TestingSystemService.Controllers
 
                 using var httpClient = new HttpClient();
                 using var form = JsonContent.Create(req);
-                var url = serviceConfig.GetFullTestLinkFrom(config.TestingSystem);
+                var url = serviceConfig.GetFullTestLinkFrom(config.TestingSystemWorker);
                 HttpResponseMessage response = await httpClient.PostAsync(url, form);
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -344,7 +281,7 @@ namespace TestingSystemService.Controllers
 
         TestingSystemResponse WriteToDb(Solution solution, ResultCode totalResult, double totalScore, string msg, bool ok, TestResponse[] responses = null)
         {
-            if(solution is null)
+            if (solution is null)
             {
                 return new TestingSystemResponse
                 {
