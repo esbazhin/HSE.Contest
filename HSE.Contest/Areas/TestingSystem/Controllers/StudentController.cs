@@ -367,6 +367,8 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             int[] solIds = JsonConvert.DeserializeObject<int[]>(ids);
             var response = Response;
             response.Headers.Add("Content-Type", "text/event-stream");
+            response.Headers.Add("Cache-Control", "no-cache");
+            response.Headers.Add("Connection", "keep-alive");
 
             var curState = new Dictionary<int, ResultCode>();
 
@@ -412,7 +414,6 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
                     await response
                         .WriteAsync("data:" + data + "\n\n");
-                    response.Body.Flush();
                 }
 
                 await Task.Delay(5 * 1000);
@@ -450,6 +451,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 System.IO.File.Delete(file);
             }
         }
+
         //bool WriteResultToDb(Solution solution, AllTestsResult result, int taskId, string solPath)
         //{
         //    if (solution == null)

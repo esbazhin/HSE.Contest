@@ -11,4 +11,10 @@ namespace HSE.Contest.Areas.Administration.ViewModels
         [DataType(DataType.Password)]
         public string Password { get; set; }
     }
+
+    public class NewLoginViewModel
+    {     
+        public string Login { get; set; }       
+        public string Password { get; set; }
+    }
 }

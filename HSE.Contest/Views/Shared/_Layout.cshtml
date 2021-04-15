@@ -18,31 +18,48 @@
         new Vue({
             el: '#layout',
             template: `
-                <a-layout class="layout">
+                <a-layout class="layout" style="display: flex; flex-direction: column; min-height: 100vh;">
         <a-layout-header>
             <a-menu
                 theme="dark"
                 mode="horizontal"
                 :style="{ lineHeight: '64px' }"
             >
+                <a-menu-item key="logo">@Html.RouteLink("HSE.Contest", new {action = "Index"})</a-menu-item>
             @if(IsSectionDefined("Back"))
             {
-                <a-menu-item key="1">@RenderSection("Back")</a-menu-item>
+
+                <a-menu-item key="back">@RenderSection("Back")</a-menu-item>
+            }
+            @if(IsSectionDefined("ManageGroups"))
+            {
+
+                <a-menu-item key="groups">@RenderSection("ManageGroups")</a-menu-item>
+            }
+            @if(IsSectionDefined("ManageCodeStyle"))
+            {
+
+                <a-menu-item key="codeStyle">@RenderSection("ManageCodeStyle")</a-menu-item>
+            }
+            @if(IsSectionDefined("ManageTasks"))
+            {
+
+                <a-menu-item key="tasks">@RenderSection("ManageTasks")</a-menu-item>
             }
 
-                <a-menu-item key="2"> @Html.RouteLink("Logout", new { controller = "Users", action = "Logout", area = "Administration"})</a-menu-item>
+                <a-menu-item key="logout" style="float: right"> @Html.RouteLink("Logout", new { controller = "Users", action = "Logout", area = "Administration"})</a-menu-item>
             </a-menu>
 
 
         </a-layout-header>
-        <a-layout-content style="padding: 0 50px">
+        <a-layout-content style="padding: 0 50px; flex: 1">
             <div style="margin: 16px 0">
             </div>
-            <div :style="{ background: '#fff', padding: '24px', minHeight: '280px' }">
+            <div style="background: #fff; padding: 24px; minHeight: 280px">
                 @RenderBody()
             </div>
         </a-layout-content>
-        <a-layout-footer style="text-align: center">
+        <a-layout-footer style="text-align: center;">
             Вышка.Контест ©2020
         </a-layout-footer>
     </a-layout>

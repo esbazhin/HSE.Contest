@@ -414,25 +414,6 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         private List<ClassDefinition> GetAllClasses(Assembly ass)
         {
             return ass.GetTypes().Where(t => t.IsClass).Select((t, i) => new ClassDefinition(t, i)).ToList();
-        }
-
-        [HttpGet]
-        public IActionResult AssignToGroup(int id)
-        {
-            var cur = db.StudentTasks.Find(id);
-            var groups = db.Groups.OrderBy(m => m.Name).Select(g => new SelectListItem(g.Name, g.Id.ToString())).ToList();
-            return View(new AssignToGroupViewModel { TaskId = id, Groups = groups, GroupId = cur.GroupId ?? -1, From = cur.From, To = cur.To });
-        }
-
-        [HttpPost]
-        public IActionResult AssignToGroup(AssignToGroupViewModel model)
-        {
-            var task = db.StudentTasks.Find(model.TaskId);
-            task.GroupId = model.GroupId;
-            task.From = DateTime.SpecifyKind(model.From, DateTimeKind.Local);
-            task.To = DateTime.SpecifyKind(model.To, DateTimeKind.Local);
-            db.SaveChanges();
-            return RedirectToAction("AllTasks");
-        }
+        }      
     }
 }

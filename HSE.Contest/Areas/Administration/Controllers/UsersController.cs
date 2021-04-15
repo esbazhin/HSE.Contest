@@ -81,6 +81,24 @@ namespace HSE.Contest.Areas.Administration.Controllers
             return View(model);
         }
 
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> LoginJson(string json)
+        {
+            NewLoginViewModel login = JsonConvert.DeserializeObject<NewLoginViewModel>(json);
+
+            User user = await db.Users.Include(c => c.Roles).ThenInclude(c => c.Role).FirstOrDefaultAsync(u => u.Email == login.Login && u.Password == login.Password);
+            if (user != null)
+            {
+                await Authenticate(user); // аутентификация
+
+                return RedicrectAfterLogin(user);
+            }
+            ModelState.AddModelError("", "Некорректные логин и(или) пароль");
+
+            return NotFound();
+        }
+
         private async Task Authenticate(User user)
         {
             // создаем один claim

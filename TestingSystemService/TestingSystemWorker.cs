@@ -38,9 +38,9 @@ namespace TestingSystemService
             await _busControl.ReceiveAsync<SolutionTestingRequest>(config.MessageQueueInfo.TestingQueueName, x => CheckSolution(x).Start());
         }
 
-        public async Task<TestingSystemResponse> CheckSolution(SolutionTestingRequest solutionId)
+        public async Task<TestingSystemResponse> CheckSolution(SolutionTestingRequest solutionRequest)
         {
-            var solution = db.Solutions.Find(solutionId.SolutionId);
+            var solution = db.Solutions.Find(solutionRequest.SolutionId);
 
             if (solution != null && solution.File != null)
             {
@@ -57,7 +57,7 @@ namespace TestingSystemService
 
                         var req = new TestRequest
                         {
-                            SolutionId = solutionId.SolutionId,
+                            SolutionId = solutionRequest.SolutionId,
                             TestId = codeStyleTask is null ? -1 : codeStyleTask.Id
                         };
 
@@ -72,7 +72,7 @@ namespace TestingSystemService
 
                             if (compResponse.OK && compResponse.Result == ResultCode.OK)
                             {
-                                var compResult = db.CompilationResults.Find(solutionId);
+                                var compResult = db.CompilationResults.Find(solutionRequest.SolutionId);
 
                                 if (compResult != null)
                                 {
@@ -83,11 +83,11 @@ namespace TestingSystemService
                                         {
                                             if (config.Tests.ContainsKey(test.TestType))
                                             {
-                                                testTasks.Add(StartTest(test.TestType, solutionId.SolutionId, test.Id));
+                                                testTasks.Add(StartTest(test.TestType, solutionRequest.SolutionId, test.Id));
                                             }
                                             else
                                             {
-                                                testTasks.Add(Task.Run(() => NoTestFound(test.TestType, solutionId.SolutionId, test.Id)));
+                                                testTasks.Add(Task.Run(() => NoTestFound(test.TestType, solutionRequest.SolutionId, test.Id)));
                                             }
                                         }
                                         await Task.WhenAll(testTasks);

@@ -1,0 +1,90 @@
+﻿@model GroupCRUDViewModel
+@{
+    ViewData["Title"] = "Новая группа";
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
+
+@section ManageTasks{
+    @Html.RouteLink("Manage Tasks", new { controller = "Professor", action = "Index", area = "TestingSystem" })
+}
+
+<h1>Новая группа</h1>
+
+<div id="app"></div>
+
+@section Scripts{
+    <script>
+let allStudents = @Json.Serialize(Model.AllStudents);
+let group = @Json.Serialize(Model.Group);
+
+let isUpdate = @Json.Serialize(Model.IsUpdate);
+
+new Vue({
+		el: '#app',
+		data: {
+            allStudents: allStudents,
+            group: group,
+			isUpdate: isUpdate,
+		},
+        methods: {
+        send: function () {
+            var http = new XMLHttpRequest();
+            var url = './PostNewGroup';
+                var data = 'json=' + encodeURIComponent(JSON.stringify(this.group));
+            if (this.isUpdate) {
+                url = './UpdateGroup';
+            }
+            http.open('POST', url, true);
+
+            //Send the proper header information along with the request
+            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+            var that = this;
+            http.onreadystatechange = function () {//Call a function when the state changes.
+                if (http.readyState == 4 && http.status == 200) {
+                    if (http.responseText != 'error') {
+                        document.location.href = http.responseText;
+                    }
+                    else {
+                        that.$message.error('An error occured. Try again!');
+                    }
+                }
+            }
+            http.send(data);
+            },
+        handleChange(targetKeys, direction, moveKeys) {
+            this.group.selectedUsers = targetKeys;
+        },
+    },
+
+		template: `
+		<div>
+		<a-collapse :bordered="true" :activeKey="[1,2]">
+		<a-collapse-panel header="Введите название группы:" key="1">
+			<a-input type="test" v-model="group.name"/>
+		</a-collapse-panel>
+		<a-collapse-panel header="Выберите студентов:" key="2">
+            <a-transfer
+                :data-source="allStudents"
+                show-search
+                :target-keys="group.selectedUsers"
+                :render="item => item.title"
+                @@change="handleChange"
+            />
+		</a-collapse-panel>
+
+		</a-collapse>
+		<a-popconfirm
+			title="Sure to send?"
+			@@confirm="send"
+        >
+			<a-button block type="submit">Сохранить</a-button>
+        </a-popconfirm>
+	</div>
+		`,
+	});
+    </script>
+}

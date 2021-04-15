@@ -1,0 +1,122 @@
+﻿@model CodeStyleCRUDViewModel
+@{
+    ViewData["Title"] = "Новые правила код-стайла";
+}
+
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageTasks{
+    @Html.RouteLink("Manage Tasks", new { controller = "Professor", action = "Index", area = "TestingSystem" })
+}
+
+<h1>Новые правила код-стайла</h1>
+
+<div id="app"></div>
+
+@section Scripts{
+    <script>
+let record = @Json.Serialize(Model.CodeStyleFiles);
+
+let isUpdate = @Json.Serialize(Model.IsUpdate);
+
+new Vue({
+		el: '#app',
+		data: {
+            record: record,
+			isUpdate: isUpdate,
+		},
+        methods: {
+        send: function () {
+            var http = new XMLHttpRequest();
+            var url = './PostNewRecord';
+                var data = 'json=' + encodeURIComponent(JSON.stringify(this.record));
+            if (this.isUpdate) {
+                url = './UpdateRecord';
+            }
+            http.open('POST', url, true);
+
+            //Send the proper header information along with the request
+            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+            var that = this;
+            http.onreadystatechange = function () {//Call a function when the state changes.
+                if (http.readyState == 4 && http.status == 200) {
+                    if (http.responseText != 'error') {
+                        document.location.href = http.responseText;
+                    }
+                    else {
+                        that.$message.error('An error occured. Try again!');
+                    }
+                }
+            }
+            http.send(data);
+        },
+		handleStyleCopFileUpload(info) {
+			if (info.file.status === 'done' && info.file.response && info.file.response != 'error') {
+                this.$message.success(`${info.file.name} file uploaded successfully`);
+                this.record.styleCop = info.file.response;
+			} else if (info.file.status === 'error') {
+				this.$message.error(`${info.file.name} file upload failed.`);
+			}
+		},
+		handleRuleSetFileUpload(info) {
+			if (info.file.status === 'done' && info.file.response && info.file.response != 'error') {
+                this.$message.success(`${info.file.name} file uploaded successfully`);
+                this.record.ruleSet = info.file.response;
+			} else if (info.file.status === 'error') {
+				this.$message.error(`${info.file.name} file upload failed.`);
+			}
+		}
+    },
+
+		template: `
+		<div>
+		<a-collapse :bordered="true" :activeKey="[1,2,3]">
+		<a-collapse-panel header="Введите название задачи:" key="1">
+			<a-input type="test" v-model="record.name"/>
+		</a-collapse-panel>
+		<a-collapse-panel header="Введите содержимое файла stylecop:" key="2">
+            <a-upload
+			    name="file"
+			    accept="application/JSON"
+			    action="./UploadFile"
+			    v-on:change="handleStyleCopFileUpload"
+		    >
+				<a-button> <a-icon type="upload" /> Загрузите .json файл с правилами StyleCop </a-button>
+			</a-upload>
+			 <a-textarea
+                placeholder="Cодержимое файла stylecop"
+	            v-model="record.styleCop"
+                :autosize="{ minRows: 10, maxRows: 30 }"
+                />
+		</a-collapse-panel>
+		<a-collapse-panel header="Введите содержимое файла ruleset:" key="3">
+			<a-upload
+			    name="file"
+			    accept=".ruleset"
+			    action="./UploadFile"
+			    v-on:change="handleRuleSetFileUpload"
+		    >
+				<a-button> <a-icon type="upload" /> Загрузите .ruleset файл с набором правил RuleSet </a-button>
+			</a-upload>
+			 <a-textarea
+                placeholder="Cодержимое файла ruleset"
+	            v-model="record.ruleSet"
+                :autosize="{ minRows: 10, maxRows: 30 }"
+                />
+		</a-collapse-panel>
+		</a-collapse-panel>
+		</a-collapse>
+		<a-popconfirm
+			title="Sure to send?"
+			@@confirm="send"
+        >
+			<a-button block type="submit">Сохранить</a-button>
+        </a-popconfirm>
+	</div>
+		`,
+	});
+    </script>
+}

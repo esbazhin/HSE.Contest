@@ -1,38 +1,37 @@
-﻿@model IEnumerable<TaskViewModel>
+﻿@model IEnumerable<CodeStyleRecordViewModel>
 
 @{
-    ViewData["Title"] = "Текущие задачи";
+    ViewData["Title"] = "Текущие правила код-стайла";
 }
-
 @section ManageGroups{
     @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
 }
 
-@section ManageCodeStyle{
-    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+@section ManageTasks{
+    @Html.RouteLink("Manage Tasks", new { controller = "Professor", action = "Index", area = "TestingSystem" })
 }
 
-<h1>Текущие задачи</h1>
+<h1>Текущие правила код-стайла</h1>
 <div id="app"></div>
 
 
 
 @section Scripts{
     <script>
-        let tasks = @Html.Raw(Json.Serialize(Model));
+        let records = @Html.Raw(Json.Serialize(Model));
         new Vue({
             el: '#app',
             data: {
-                tasks: tasks,
+                records: records,
             },
             methods: {
-                redirect: function (id) { document.location.href = './DeleteTask?id=' + id;}
+                redirect: function (id) { document.location.href = './DeleteRecord?id=' + id;}
             },
             template: `
                 <div>
-                <a-list itemLayout="horizontal" :dataSource="tasks">
+                <a-list itemLayout="horizontal" :dataSource="records">
                     <a-list-item slot="renderItem" slot-scope="item, index">
-                            <a :href="'./ChangeTask?id=' + item.id" slot="actions">edit</a>
+                            <a :href="'./ChangeRecord?id=' + item.id" slot="actions">edit</a>
                             <a-popconfirm slot="actions"
                                 title="Sure to delete?"
                                 @@confirm="redirect(item.id)"
@@ -44,9 +43,9 @@
                         </a-list-item-meta>
                     </a-list-item>
                 </a-list>
-                <a href="./CreateNewTask">
+                <a href="./CreateNewRecord">
                     <a-button type="dashed" block>
-                        <a-icon type="plus" /> Добавить новую задачу
+                        <a-icon type="plus" /> Добавить новые правила
                     </a-button>
                 </a>
             </div>

@@ -6,13 +6,20 @@
 @section Back{
     @Html.RouteLink("Back", new { controller = "Professor", action = "AllTasks", area = "TestingSystem" })
 }
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
 <h1>Новая задача</h1>
 
 <div id="app"></div>
 
 @section Scripts{
     <script src="~/js/newTask31.js"></script>
-    
+
     <script>
 let groups1 = @Json.Serialize(Model.Groups);
 
@@ -77,9 +84,11 @@ new Vue({
 		 </a-form-item>
 		 <a-form-item
 		 :wrapperCol="{ span: 20 }">
+		<a href="../../Administration/Groups/Index">
 		<a-button block type="dashed">
 			Управление группами
 		</a-button>
+		</a>
 		 </a-form-item>
 		 </a-form>
 		</a-col>

@@ -6,6 +6,13 @@
 @section Back{
     @Html.RouteLink("Back", new { controller = "Professor", action = "ChangeTask", id = Model.TaskId, area = "TestingSystem" })
 }
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
 <h1>Данные теста</h1>
 
 <div id="app"></div>
@@ -52,7 +59,7 @@ new Vue({
 			send: function () {
                 var http = new XMLHttpRequest();
                 var url = './UpdateTaskTest';
-                var data = 'json=' + encodeURIComponent(JSON.stringify(this.taskTestData));                
+                var data = 'json=' + encodeURIComponent(JSON.stringify(this.taskTestData));
                 http.open('POST', url, true);
 
                 //Send the proper header information along with the request
@@ -168,9 +175,11 @@ new Vue({
 								</a-select>
 								</a-form-item>
 								<a-form-item>
+									<a href="../../Administration/CodeStyleRules/Index">
 									<a-button block type="dashed">
 										Управление файлами с правилами код-стайла
 									</a-button>
+									</a>
 								</a-form-item>
 								<a-form-item
 								label="Обновлять ли файлы при компиляции?"
@@ -186,8 +195,8 @@ new Vue({
 							Произошла какая-то ошибка и ни один вариант ввода не подошел под данный тип теста!
 						</div>
 					</div>
-				</div>			
-			</div>			
+				</div>
+			</div>
 		</div>
 		`,
 	});

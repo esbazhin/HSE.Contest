@@ -14,7 +14,7 @@ const sol = {"data": @Html.Raw(Json.Serialize(Model))};
 sol.data.deadline = moment(sol.data.deadline);
 
 const ids = sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
-var source = new EventSource('./SSE?taskId=' + sol.data.taskId + '&ids=' + JSON.stringify(ids));
+const source = new EventSource('./SSE?taskId=' + sol.data.taskId + '&ids=' + JSON.stringify(ids));
 
 source.onmessage = function (event) {
 	console.log('onmessage');
@@ -35,7 +35,8 @@ new Vue({
 	data: {
 		sol: sol,
         fileList: [],
-        selFramework: sol.data.frameworkTypes[0],
+		selFramework: sol.data.frameworkTypes[0],
+		eventSource: source,
 		columns: [
 			{ title: 'Время', width: 100, key: 'time', scopedSlots: { customRender: 'time' }},
             { title: 'Оценка', width: 100, key: 'totalScore', scopedSlots: { customRender: 'totalScore' } },
@@ -79,21 +80,42 @@ new Vue({
 			http.onreadystatechange = () => {//Call a function when the state changes.
 				if (http.readyState == 4 && http.status == 200) {
 					const response = JSON.parse(http.responseText);
-					if (response.status && response.status == 'success') {
+                    if (response.status && response.status == 'success' || response.status == 'connectionError') {
 						//document.location.href = response.data;
                         this.sol.data = response.data;
 						this.sol.data.deadline = moment(sol.data.deadline);
-                        options.onSuccess(response, options.File);
-					}
-                    else if (response.status && response.status == 'connectionError'){
-                        this.sol.data = response.data;
-                        this.sol.data.deadline = moment(sol.data.deadline);
-                        options.onError(response, options.File);
+                      					
+						this.eventSource.close();
+
+                        const ids = this.sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
+                        this.eventSource = new EventSource('./SSE?taskId=' + this.sol.data.taskId + '&ids=' + JSON.stringify(ids));
+
+						var that = this;
+                        this.eventSource.onmessage = function (event) {
+                            console.log('onmessage');
+                            that.sol.data = JSON.parse(event.data);
+                            that.sol.data.deadline = moment(that.sol.data.deadline);
+                        };
+
+                        this.eventSource.onopen = function (event) {
+                            console.log('onopen');
+                        };
+
+                        this.eventSource.onerror = function (event) {
+                            console.log('onerror');
+						}
+
+                        if (response.status == 'success') {
+							options.onSuccess(response, options.File);
+						}
+						else {
+							options.onError(response, options.File);
+						}
                     }
 					else {
 						options.onError(response, options.File);
 					}
-					
+
 				}
 			}
 			http.send(data);
