@@ -20,11 +20,11 @@ namespace NetFrameworkFunctionalTesterService.Controllers
     [ApiController]
     public class FunctionalTesterController : ControllerBase
     {
-        HSEContestDbContext db;
+        private readonly HSEContestDbContext _db;
 
-        public FunctionalTesterController(HSEContestDbContext context)
+        public FunctionalTesterController(HSEContestDbContext db)
         {
-            db = context;
+            _db = db;
         }
 
         [HttpPost]
@@ -32,7 +32,7 @@ namespace NetFrameworkFunctionalTesterService.Controllers
         {
             try
             {
-                var solution = db.Solutions.Find(request.SolutionId);
+                var solution = _db.Solutions.Find(request.SolutionId);
 
                 if (solution is null)
                 {
@@ -45,7 +45,7 @@ namespace NetFrameworkFunctionalTesterService.Controllers
                     };
                 }
 
-                var compilation = db.CompilationResults.Find(request.SolutionId);
+                var compilation = _db.CompilationResults.Find(request.SolutionId);
 
                 if (compilation is null)
                 {
@@ -133,9 +133,9 @@ namespace NetFrameworkFunctionalTesterService.Controllers
 
         TestResponse WriteToDb(TestingResult res)
         {
-            var x = db.TestingResults.Add(res);
+            var x = _db.TestingResults.Add(res);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
 
             bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
@@ -190,7 +190,7 @@ namespace NetFrameworkFunctionalTesterService.Controllers
 
         async Task<FunctionalTestResult> TestProject(string pathToDll, int testId)
         {
-            var task = db.TaskTests.Find(testId);
+            var task = _db.TaskTests.Find(testId);
             var data = JsonConvert.DeserializeObject<FunctionalTestData>(task.TestData);
 
             var tasks = data.FunctionalTests.Select(t => Task.Run(() =>

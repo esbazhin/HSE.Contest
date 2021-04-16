@@ -16,7 +16,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
         public virtual StudentTask Task { get; set; }
 
         [Column(name: "studentId")]
-        public int StudentId { get; set; }
+        public string StudentId { get; set; }
         //public User Student { get; set; }
 
         [Column(name: "score")]

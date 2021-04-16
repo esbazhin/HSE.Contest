@@ -5,7 +5,6 @@ using HSE.Contest.ClassLibrary.Communication.Requests;
 using HSE.Contest.ClassLibrary.Communication.Responses;
 using HSE.Contest.ClassLibrary.DbClasses;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -19,22 +18,18 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
     [ApiController]
     public class FunctionalTestingOrchestratorController : ControllerBase
     {
-        TestingSystemConfig config;
-        HSEContestDbContext db;
-        public FunctionalTestingOrchestratorController()
+        private readonly TestingSystemConfig _config;
+        private readonly HSEContestDbContext _db;
+        public FunctionalTestingOrchestratorController(HSEContestDbContext db, TestingSystemConfig config)
         {
-            string pathToConfig = "c:\\config\\config.json";
-            config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
-
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.Tests["functionalTest"]));
-            db = new HSEContestDbContext(options.Options);
+            _db = db;
+            _config = config;
         }
 
         [HttpPost]
         public async Task<TestResponse> TestProject([FromBody] TestRequest request)
         {
-            var solution = db.Solutions.Find(request.SolutionId);
+            var solution = _db.Solutions.Find(request.SolutionId);
             if (solution is null || solution.File is null)
             {
                 return new TestResponse
@@ -46,9 +41,9 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
                 };
             }
 
-            if (config.FunctionalTesterImages.ContainsKey(solution.FrameworkType))
+            if (_config.FunctionalTesterImages.ContainsKey(solution.FrameworkType))
             {
-                return await TestInNewContainer(config.FunctionalTesterImages[solution.FrameworkType], request);
+                return await TestInNewContainer(_config.FunctionalTesterImages[solution.FrameworkType], request);
             }  
             else
             {
@@ -82,7 +77,7 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
                         PublishAllPorts = true,
                         //Memory = 2097152
                     },
-                    Env = new List<string> { "db_connection=" + config.DatabaseInfo.GetConnectionStringFrom(null) }
+                    Env = new List<string> { "db_connection=" + _config.DatabaseInfo.GetConnectionStringFrom(null) }
                 });
 
                 var id = createRes.ID;

@@ -1,3 +1,5 @@
+using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.DbClasses;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -24,6 +26,12 @@ namespace FunctionalTestingServicesOrchestrator
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddTransient<TestingSystemConfigFactory>();
+            services.AddTransient(provider => provider.GetService<TestingSystemConfigFactory>().CreateApplicationConfig());
+
+            services.AddTransient<HSEContestDbContextFactory>();
+            services.AddTransient(provider => provider.GetService<HSEContestDbContextFactory>().CreateApplicationDbContext());
+
             services.AddHealthChecks();
             services.AddControllers();
             services.AddSwaggerGen(c =>

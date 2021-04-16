@@ -1,0 +1,57 @@
+﻿@model IEnumerable<UserPreViewModel>
+
+@{
+    ViewData["Title"] = "Все пользователи";
+}
+
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
+
+<h1>Все пользователи</h1>
+<div id="app"></div>
+
+
+
+@section Scripts{
+    <script>
+        let users = @Html.Raw(Json.Serialize(Model));
+        new Vue({
+            el: '#app',
+            data: {
+                users: users,
+            },
+            methods: {
+                redirect: function (id) { document.location.href = './DeleteUser?id=' + id;}
+            },
+            template: `
+                <div>
+                <a-list itemLayout="horizontal" :dataSource="users">
+                    <a-list-item slot="renderItem" slot-scope="item, index">
+                            <a :href="'./ChangeUser?id=' + item.id" slot="actions">edit</a>
+                            <a-popconfirm slot="actions"
+                                title="Sure to delete?"
+                                @@confirm="redirect(item.id)"
+                                >
+                                    <a-button type="link">delete</a-button>
+                            </a-popconfirm>
+                            <a :href="'./ChangePassword?id=' + item.id" slot="actions">change password</a>
+                        <a-list-item-meta :description="item.description">
+                            <label slot="title">{{item.fullName}}</label>
+                        </a-list-item-meta>
+                    </a-list-item>
+                </a-list>
+                <a href="./CreateNewUser">
+                    <a-button type="dashed" block>
+                        <a-icon type="plus" /> Добавить нового пользователя
+                    </a-button>
+                </a>
+            </div>
+                `,
+        });
+    </script>
+}

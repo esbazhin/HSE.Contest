@@ -1,11 +1,12 @@
 ﻿using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using HSE.Contest.ClassLibrary.DbClasses.Files;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace HSE.Contest.ClassLibrary.DbClasses
 {
-    public class HSEContestDbContext : DbContext
+    public class HSEContestDbContext : IdentityDbContext<User>
     {
         public DbSet<StudentTask> StudentTasks { get; set; }
         public DbSet<DbFileInfo> Files { get; set; }
@@ -14,10 +15,6 @@ namespace HSE.Contest.ClassLibrary.DbClasses
         public DbSet<TestingResult> TestingResults { get; set; }
         public DbSet<TaskTest> TaskTests { get; set; }
         public DbSet<CodeStyleFiles> CodeStyleFiles { get; set; }
-
-        public DbSet<User> Users { get; set; }
-        public DbSet<Role> Roles { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<Group> Groups { get; set; }
         public DbSet<UserGroup> UserGroups { get; set; }
 
@@ -35,6 +32,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<Solution>()
                 .HasKey(t => t.Id);
 
@@ -54,19 +52,6 @@ namespace HSE.Contest.ClassLibrary.DbClasses
                 .HasOne(sc => sc.Task)
                 .WithMany(s => s.Tests)
                 .HasForeignKey(sc => sc.TaskId);
-
-            modelBuilder.Entity<UserRole>()
-                .HasKey(t => new { t.UserId, t.RoleId });
-
-            modelBuilder.Entity<UserRole>()
-                .HasOne(sc => sc.User)
-                .WithMany(s => s.Roles)
-                .HasForeignKey(sc => sc.UserId);
-
-            modelBuilder.Entity<UserRole>()
-                .HasOne(sc => sc.Role)
-                .WithMany(c => c.Users)
-                .HasForeignKey(sc => sc.RoleId);
 
             modelBuilder.Entity<UserGroup>()
                 .HasKey(t => new { t.UserId, t.GroupId });

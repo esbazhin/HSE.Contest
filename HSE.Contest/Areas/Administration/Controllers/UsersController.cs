@@ -1,182 +1,248 @@
 ﻿using HSE.Contest.Areas.Administration.ViewModels;
-using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.Administration;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace HSE.Contest.Areas.Administration.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "admin")]
     [Area("Administration")]
     public class UsersController : Controller
     {
-        TestingSystemConfig config;
-        HSEContestDbContext db;
-        public UsersController()
-        {
-            string pathToConfig = "c:\\config\\config.json";
-            config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly HSEContestDbContext _db;
 
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
-            db = new HSEContestDbContext(options.Options);
+        public UsersController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, HSEContestDbContext db)
+        {
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _db = db;
         }
 
-        [AllowAnonymous]
         public IActionResult Index()
         {
-            if (User.Identity.IsAuthenticated)
+            return RedirectToAction("AllUsers");
+        }
+
+        public async Task<IActionResult> AllUsers()
+        {
+            var allUsers = await _userManager.Users.ToListAsync();
+            var users = new List<UserPreViewModel>();
+
+            foreach (var u in allUsers)
             {
-                var id = User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier).Value;
-                User user = db.Users.Include(c => c.Roles).ThenInclude(c => c.Role).FirstOrDefaultAsync(u => u.Id == int.Parse(id)).Result;
-                if (user != null)
+                var roles = await _userManager.GetRolesAsync(u);
+                users.Add(new UserPreViewModel
                 {
-                    return RedicrectAfterLogin(user);
+                    Id = u.Id,
+                    FullName = u.FirstName + " " + u.LastName,
+                    Email = u.Email,
+                    Roles = string.Join(",", roles),
+                    Groups = string.Join(",", u.Groups.Select(g => g.Group.Name)),
+                });
+            }
+
+            return View(users);
+        }
+
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            User user = await _userManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                await _userManager.DeleteAsync(user);
+            }
+            return RedirectToAction("AllUsers");
+        }
+
+        public async Task<IActionResult> CreateNewUser()
+        {
+            var allRoles = await _roleManager.Roles.Select(r => new TransferViewModel(r)).ToListAsync();
+            var allGroups = await _db.Groups.Select(g => new TransferViewModel(g)).ToListAsync();
+
+            return View(new UserCRUDViewModel { AllRoles = allRoles, AllGroups = allGroups, User = new UserViewModel(null, null), IsUpdate = false });
+        }
+
+        public async Task<IActionResult> ChangeUser(string id)
+        {
+            User user = await _userManager.FindByIdAsync(id);
+            if (user is null)
+            {
+                return NotFound();
+            }
+
+            var allRoles = await _roleManager.Roles.Select(r => new TransferViewModel(r)).ToListAsync();
+            var allGroups = await _db.Groups.Select(g => new TransferViewModel(g)).ToListAsync();
+
+            var selRoles = await _userManager.GetRolesAsync(user);
+            return View("CreateNewUser", new UserCRUDViewModel { AllRoles = allRoles, AllGroups = allGroups, User = new UserViewModel(user, selRoles.ToList()), IsUpdate = true });
+        }
+
+        public async Task<IActionResult> UpdateUser(string json)
+        {
+            UserViewModel userRecord = JsonConvert.DeserializeObject<UserViewModel>(json);
+
+            User user = await _userManager.FindByIdAsync(userRecord.Id);
+
+            if (user is null)
+            {
+                return Content("error");
+            }
+
+            _db.UserGroups.RemoveRange(user.Groups);
+
+            user.FirstName = userRecord.FirstName;
+            user.LastName = userRecord.LastName;
+            user.Email = userRecord.Email;
+            user.UserName = userRecord.Email;
+
+            user.Groups = userRecord.SelectedGroups.Select(g => new UserGroup { GroupId = int.Parse(g), UserId = userRecord.Id }).ToList();
+
+            var result = await _userManager.UpdateAsync(user);
+
+            bool ok = result.Succeeded;
+
+            if (ok)
+            {
+                var allRoles = await _userManager.GetRolesAsync(user);
+
+                var res = await _userManager.RemoveFromRolesAsync(user, allRoles);
+                ok = res.Succeeded;
+
+                if (ok)
+                {
+                    var res1 = await _userManager.AddToRolesAsync(user, userRecord.SelectedRoles);
+
+                    ok = res1.Succeeded;
+
+                    if(ok)
+                    {
+                        var response1 = new
+                        {
+                            status = "success",
+                            data = "/Administration/Users/ChangeUser?id=" + user.Id
+                        };
+
+                        return Json(response1);
+                    }
+                }
+
+                var response2 = new
+                {
+                    status = "error",
+                    data = string.Join(",", res.Errors.Select(e => e.Description))
+                };
+
+                return Json(response2);
+            }
+
+            var response3 = new
+            {
+                status = "error",
+                data = string.Join(",", result.Errors.Select(e => e.Description))
+            };
+
+            return Json(response3);
+        }
+
+        public async Task<IActionResult> PostNewUser(string json)
+        {
+            UserViewModel userRecord = JsonConvert.DeserializeObject<UserViewModel>(json);
+            User newUser = new User
+            {
+                FirstName = userRecord.FirstName,
+                LastName = userRecord.LastName,
+                Email = userRecord.Email,
+                UserName = userRecord.Email,
+                Groups = userRecord.SelectedGroups.Select(g => new UserGroup { GroupId = int.Parse(g), UserId = userRecord.Id }).ToList()
+            };
+
+            var result = await _userManager.CreateAsync(newUser, userRecord.Password);
+
+            bool ok = result.Succeeded;
+
+            if (ok)
+            {
+                var res1 = await _userManager.AddToRolesAsync(newUser, userRecord.SelectedRoles);
+
+                var response1 = new
+                {
+                    status = "success",
+                    data = "/Administration/Users/ChangeUser?id=" + newUser.Id
+                };
+
+                return Json(response1);
+            }
+
+            var response2 = new
+            {
+                status = "error",
+                data = string.Join(",", result.Errors.Select(e => e.Description))
+            };
+
+            return Json(response2);
+        }
+
+        [HttpGet]
+        public IActionResult ChangePassword(string id)
+        {
+            return View("ChangePassword", id);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ChangePassword(string id, string newPassword)
+        {
+            User user = await _userManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                var _passwordValidator =
+                    HttpContext.RequestServices.GetService(typeof(IPasswordValidator<User>)) as IPasswordValidator<User>;
+                var _passwordHasher =
+                    HttpContext.RequestServices.GetService(typeof(IPasswordHasher<User>)) as IPasswordHasher<User>;
+
+                IdentityResult result =
+                    await _passwordValidator.ValidateAsync(_userManager, user, newPassword);
+                if (result.Succeeded)
+                {
+                    user.PasswordHash = _passwordHasher.HashPassword(user, newPassword);
+                    await _userManager.UpdateAsync(user);
+                    var response1 = new
+                    {
+                        status = "success",
+                        data = "/Administration/Users"
+                    };
+
+                    return Json(response1);
                 }
                 else
                 {
-                    return RedirectToAction("Logout", "Users");
+                    var response1 = new
+                    {
+                        status = "error",
+                        data = string.Join(",", result.Errors.Select(e => e.Description))
+                    };
+
+                    return Json(response1);
                 }
             }
             else
             {
-                return RedirectToAction("Login", "Users");
-            }
-        }
-
-        [AllowAnonymous]
-        [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
-
-        [AllowAnonymous]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model)
-        {
-
-            if (ModelState.IsValid)
-            {
-                User user = await db.Users.Include(c => c.Roles).ThenInclude(c => c.Role).FirstOrDefaultAsync(u => u.Email == model.Email && u.Password == model.Password);
-                if (user != null)
+                var response1 = new
                 {
-                    await Authenticate(user); // аутентификация
+                    status = "error",
+                    data = "Пользователь не найден"
+                };
 
-                    return RedicrectAfterLogin(user);
-                }
-                ModelState.AddModelError("", "Некорректные логин и(или) пароль");
+                return Json(response1);
             }
-            return View(model);
-        }
-
-        [AllowAnonymous]
-        [HttpPost]
-        public async Task<IActionResult> LoginJson(string json)
-        {
-            NewLoginViewModel login = JsonConvert.DeserializeObject<NewLoginViewModel>(json);
-
-            User user = await db.Users.Include(c => c.Roles).ThenInclude(c => c.Role).FirstOrDefaultAsync(u => u.Email == login.Login && u.Password == login.Password);
-            if (user != null)
-            {
-                await Authenticate(user); // аутентификация
-
-                return RedicrectAfterLogin(user);
-            }
-            ModelState.AddModelError("", "Некорректные логин и(или) пароль");
-
-            return NotFound();
-        }
-
-        private async Task Authenticate(User user)
-        {
-            // создаем один claim
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.FirstName + " " + user.LastName),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
-            };
-
-            claims.AddRange(user.Roles.Select(r => new Claim(ClaimTypes.Role, r.Role.Name)));
-            // создаем объект ClaimsIdentity
-            ClaimsIdentity id = new ClaimsIdentity(claims, "ApplicationCookie");
-            // установка аутентификационных куки
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(id));
-        }
-
-        private IActionResult RedicrectAfterLogin(User user)
-        {
-            if (user.Roles.Count == 1)
-            {
-                return GetRedirect(user.Roles.First().Role.Name);
-            }
-            else
-            {
-                return ChooseRole(user);
-            }
-        }
-
-        IActionResult ChooseRole(User user)
-        {
-            if (user.Roles.Count != 0)
-            {
-                return View("ChooseRole", user.Roles.Select(r => new RedirectViewModel(r.Role.Name, GetRedirect(r.Role.Name))
-                {
-                    Role = r.Role.Name,
-                }).ToList());
-            }
-            else
-            {
-                return RedirectToAction("NoRoleFound", "Users");
-            }
-        }
-
-        RedirectToActionResult GetRedirect(string role)
-        {
-            switch (role)
-            {
-                case "admin":
-                    return RedirectToAction("Index", "Admin");
-                case "student":
-                    return RedirectToAction("Index", "Student", new { area = "TestingSystem" });
-                case "professor":
-                    return RedirectToAction("Index", "Professor", new { area = "TestingSystem" });
-                default:
-                    return RedirectToAction("NoRoleFound", "Users");
-            }
-        }
-
-        public IActionResult NoRoleFound()
-        {
-            return MessageResult("Не найдена подходящая роль, обратитесь к администратору!");
-        }
-
-        private IActionResult MessageResult(string v)
-        {
-            return View("Message", v);
-        }
-
-        public IActionResult AccessDenied()
-        {
-            return MessageResult("Доступ запрещён!");
-        }
-
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login", "Users");
         }
     }
 }

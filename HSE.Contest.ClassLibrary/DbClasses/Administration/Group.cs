@@ -17,7 +17,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses.Administration
     public class UserGroup
     {
         [Column(name: "userId")]
-        public int UserId { get; set; }
+        public string UserId { get; set; }
         public virtual User User { get; set; }
         [Column(name: "groupId")]
         public int GroupId { get; set; }

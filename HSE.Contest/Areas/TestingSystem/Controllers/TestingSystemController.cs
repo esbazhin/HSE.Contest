@@ -1,35 +1,22 @@
 ﻿using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.DbClasses;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
 
 namespace HSE.Contest.Areas.TestingSystem.Controllers
 {
     public class TestingSystemController : Controller
     {
-        protected readonly HSEContestDbContext db;
-        protected readonly TestingSystemConfig config;
-        protected readonly string pathToConfigDir;
+        protected readonly HSEContestDbContext _db;
+        protected readonly TestingSystemConfig _config;
+        protected readonly string _pathToConfigDir;
 
-        public TestingSystemController()
+        public TestingSystemController(HSEContestDbContext db, TestingSystemConfig config)
         {
-            pathToConfigDir = "c:\\config";
-            string pathToConfig = pathToConfigDir + "\\config.json";
-            config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
-
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
-            db = new HSEContestDbContext(options.Options);
-        }
-
-
-        protected int GetId()
-        {
-            return int.Parse(User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier).Value);
+            _pathToConfigDir = "c:\\config";
+            _db = db;
+            _config = config;
         }
 
         protected string FindProjectFile(DirectoryInfo dir)

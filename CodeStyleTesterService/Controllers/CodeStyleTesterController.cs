@@ -17,15 +17,10 @@ namespace CodeStyleTesterService.Controllers
     [ApiController]
     public class CodeStyleTesterController : ControllerBase
     {
-        HSEContestDbContext db;
-        public CodeStyleTesterController()
-        {
-            string pathToConfig = "c:\\config\\config.json";
-            var config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
-
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.Tests["codeStyleTest"]));
-            db = new HSEContestDbContext(options.Options);
+        private readonly HSEContestDbContext _db;
+        public CodeStyleTesterController(HSEContestDbContext db)
+        {           
+            _db = db;
         }
 
         [HttpPost]
@@ -33,7 +28,7 @@ namespace CodeStyleTesterService.Controllers
         {
             try
             {
-                var solution = db.Solutions.Find(request.SolutionId);
+                var solution = _db.Solutions.Find(request.SolutionId);
 
                 if (solution is null)
                 {
@@ -46,7 +41,7 @@ namespace CodeStyleTesterService.Controllers
                     };
                 }
 
-                var compilation = db.CompilationResults.Find(request.SolutionId);
+                var compilation = _db.CompilationResults.Find(request.SolutionId);
 
                 if (compilation is null)
                 {
@@ -103,9 +98,9 @@ namespace CodeStyleTesterService.Controllers
 
         TestResponse WriteToDb(TestingResult res)
         {
-            var x = db.TestingResults.Add(res);
+            var x = _db.TestingResults.Add(res);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
 
             bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;

@@ -5,7 +5,6 @@ using HSE.Contest.ClassLibrary.Communication.Requests;
 using HSE.Contest.ClassLibrary.Communication.Responses;
 using HSE.Contest.ClassLibrary.DbClasses;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -19,16 +18,12 @@ namespace CompilerServicesOrchestrator.Controllers
     [ApiController]
     public class CompilerServicesOrchestrationController : ControllerBase
     {
-        TestingSystemConfig config;
-        HSEContestDbContext db;
-        public CompilerServicesOrchestrationController()
+        private readonly TestingSystemConfig _config;
+        private readonly HSEContestDbContext _db;
+        public CompilerServicesOrchestrationController(HSEContestDbContext db, TestingSystemConfig config)
         {
-            string pathToConfig = "c:\\config\\config.json";
-            config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
-
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.CompilerServicesOrchestrator));
-            db = new HSEContestDbContext(options.Options);
+            _db = db;
+            _config = config;
         }
 
         //[HttpPost]
@@ -49,7 +44,7 @@ namespace CompilerServicesOrchestrator.Controllers
         [HttpPost]
         public async Task<TestResponse> CompileProject([FromBody] TestRequest request)
         {
-            var solution = db.Solutions.Find(request.SolutionId);
+            var solution = _db.Solutions.Find(request.SolutionId);
             if (solution is null || solution.File is null)
             {
                 return new TestResponse
@@ -61,9 +56,9 @@ namespace CompilerServicesOrchestrator.Controllers
                 };
             }
 
-            if (config.CompilerImages.ContainsKey(solution.FrameworkType))
+            if (_config.CompilerImages.ContainsKey(solution.FrameworkType))
             {
-                return await CompileInNewContainer(config.CompilerImages[solution.FrameworkType], request);
+                return await CompileInNewContainer(_config.CompilerImages[solution.FrameworkType], request);
             }
             else
             {
@@ -96,7 +91,7 @@ namespace CompilerServicesOrchestrator.Controllers
                     {
                         PublishAllPorts = true
                     },
-                    Env = new List<string> { "db_connection=" + config.DatabaseInfo.GetConnectionStringFrom(null) }
+                    Env = new List<string> { "db_connection=" + _config.DatabaseInfo.GetConnectionStringFrom(null) }
                 });
 
                 var id = createRes.ID;
@@ -203,9 +198,9 @@ namespace CompilerServicesOrchestrator.Controllers
         [HttpPost]
         public async Task<CompilationResponse> CompileTaskProject([FromBody] CompilationRequest request)
         {            
-            if (config.CompilerImages.ContainsKey(request.Framework))
+            if (_config.CompilerImages.ContainsKey(request.Framework))
             {
-                return await CompileTaskInNewContainer(config.CompilerImages[request.Framework], request);
+                return await CompileTaskInNewContainer(_config.CompilerImages[request.Framework], request);
             }
             else
             {
@@ -236,7 +231,7 @@ namespace CompilerServicesOrchestrator.Controllers
                     {
                         PublishAllPorts = true
                     },
-                    Env = new List<string> { "db_connection=" + config.DatabaseInfo.GetConnectionStringFrom(null) }
+                    Env = new List<string> { "db_connection=" + _config.DatabaseInfo.GetConnectionStringFrom(null) }
                 });
 
                 var id = createRes.ID;

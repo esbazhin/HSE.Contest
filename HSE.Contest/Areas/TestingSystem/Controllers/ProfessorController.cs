@@ -2,14 +2,14 @@
 using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.Communication.Requests;
 using HSE.Contest.ClassLibrary.Communication.Responses;
+using HSE.Contest.ClassLibrary.DbClasses;
+using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
 using HSE.Contest.ClassLibrary.TestsClasses.ReflectionTest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +26,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
     [Area("TestingSystem")]
     public class ProfessorController : TestingSystemController
     {
-        public ProfessorController() : base()
+        public ProfessorController(HSEContestDbContext db, TestingSystemConfig config) : base(db, config)
         {
         }
 
@@ -37,7 +37,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public IActionResult AllTasks()
         {
-            var tasks = db.StudentTasks.Select(t => new TaskViewModel
+            var tasks = _db.StudentTasks.Select(t => new TaskViewModel
             {
                 Id = t.Id,
                 Name = t.Name,
@@ -48,24 +48,28 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public IActionResult DeleteTask(int id)
         {
-            var y = db.StudentTasks.Find(id);
-            db.StudentTasks.Remove(y);
-            db.SaveChanges();
+            var y = _db.StudentTasks.Find(id);
+            _db.StudentTasks.Remove(y);
+            _db.SaveChanges();
             return RedirectToAction("AllTasks");
         }
 
         public IActionResult CreateNewTask()
         {
-            var groups = db.Groups.Select(g => new GroupViewModel(g)).ToList();
-            var testTypes = config.Tests.Keys.Select(k => new TestType(k)).ToList();
+            var groups = _db.Groups.Select(g => new GroupViewModel(g)).ToList();
+            var testTypes = _config.Tests.Keys.Select(k => new TestType(k)).ToList();
+            if(groups.Count == 0)
+            {
+                return NoContent();
+            }
             return View(new TaskCRUDViewModel { Groups = groups, TestTypes = testTypes, Task = new TaskViewModelNew(groups[0].Id), IsUpdate = false });
         }
 
         public IActionResult ChangeTask(int id)
         {
-            var groups = db.Groups.Select(g => new GroupViewModel(g)).ToList();
-            var testTypes = config.Tests.Keys.Select(k => new TestType(k)).ToList();
-            var cur = db.StudentTasks.Find(id);
+            var groups = _db.Groups.Select(g => new GroupViewModel(g)).ToList();
+            var testTypes = _config.Tests.Keys.Select(k => new TestType(k)).ToList();
+            var cur = _db.StudentTasks.Find(id);
 
             if (cur is null)
             {
@@ -87,28 +91,28 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public IActionResult EditTaskTestData(int id)
         {
-            var y = db.TaskTests.Find(id);
+            var y = _db.TaskTests.Find(id);
 
             if (y is null)
             {
                 NotFound();
             }           
 
-            var task = db.StudentTasks.Find(y.TaskId);
+            var task = _db.StudentTasks.Find(y.TaskId);
 
             if (task is null)
             {
                 NotFound();
             }
            
-            var codeStyleFiles = db.CodeStyleFiles.Select(f => new CodeStyleFilesViewModel(f)).ToArray();
+            var codeStyleFiles = _db.CodeStyleFiles.Select(f => new CodeStyleFilesViewModel(f)).ToArray();
 
-            return View(new TaskTestViewModel(y, task, config.CompilerImages.Keys.ToArray(), codeStyleFiles));
+            return View(new TaskTestViewModel(y, task, _config.CompilerImages.Keys.ToArray(), codeStyleFiles));
         }
 
         public IActionResult DeleteTaskTest(int id)
         {
-            var y = db.TaskTests.Find(id);
+            var y = _db.TaskTests.Find(id);
 
             if (y is null)
             {
@@ -116,8 +120,8 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             }
 
             var taskId = y.TaskId;
-            db.TaskTests.Remove(y);
-            db.SaveChanges();
+            _db.TaskTests.Remove(y);
+            _db.SaveChanges();
 
             return Content("/TestingSystem/Professor/ChangeTask?id=" + taskId.ToString());
         }
@@ -126,7 +130,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             TaskViewModelNew jsonTask = JsonConvert.DeserializeObject<TaskViewModelNew>(json);
 
-            var y = db.StudentTasks.Find(jsonTask.Id);
+            var y = _db.StudentTasks.Find(jsonTask.Id);
 
             if (y is null)
             {
@@ -141,9 +145,9 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             y.To = jsonTask.Time[1];
             y.NumberOfAttempts = jsonTask.AttemptsNumber;
 
-            var x = db.StudentTasks.Update(y);
+            var x = _db.StudentTasks.Update(y);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
             bool ok = beforeState == Microsoft.EntityFrameworkCore.EntityState.Modified && afterState == Microsoft.EntityFrameworkCore.EntityState.Unchanged && r == 1;
 
@@ -153,7 +157,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
                 foreach (var tt in oldTaskTests)
                 {
-                    var oldTt = db.TaskTests.Find(tt.Id);
+                    var oldTt = _db.TaskTests.Find(tt.Id);
 
                     if (oldTt is null)
                     {
@@ -168,9 +172,9 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     oldTt.Block = tt.Block;
                     oldTt.Weight = tt.Weight / 100.0;
 
-                    x = db.StudentTasks.Update(y);
+                    x = _db.StudentTasks.Update(y);
                     beforeState = x.State;
-                    db.SaveChanges();
+                    _db.SaveChanges();
                     afterState = x.State;
                     ok = beforeState == Microsoft.EntityFrameworkCore.EntityState.Modified && afterState == Microsoft.EntityFrameworkCore.EntityState.Unchanged;
 
@@ -190,8 +194,8 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                      TestData = null
                  }).ToArray();
 
-                db.TaskTests.AddRange(newTaskTests);
-                r = db.SaveChanges();
+                _db.TaskTests.AddRange(newTaskTests);
+                r = _db.SaveChanges();
                 ok = r == newTaskTests.Length;
             }
 
@@ -213,9 +217,9 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 NumberOfAttempts = jsonTask.AttemptsNumber
             };
 
-            var x = db.StudentTasks.Add(newTask);
+            var x = _db.StudentTasks.Add(newTask);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
             bool ok = beforeState == Microsoft.EntityFrameworkCore.EntityState.Added && afterState == Microsoft.EntityFrameworkCore.EntityState.Unchanged && r == 1;
 
@@ -231,8 +235,8 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                      TestData = null
                  }).ToArray();
 
-                db.TaskTests.AddRange(newTaskTests);
-                r = db.SaveChanges();
+                _db.TaskTests.AddRange(newTaskTests);
+                r = _db.SaveChanges();
                 ok = r == newTaskTests.Length;
             }
 
@@ -243,7 +247,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             TaskTestViewModel jsonTask = JsonConvert.DeserializeObject<TaskTestViewModel>(json);
 
-            var y = db.TaskTests.Find(jsonTask.Id);
+            var y = _db.TaskTests.Find(jsonTask.Id);
 
             if (y is null)
             {
@@ -252,9 +256,9 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
             y.TestData = jsonTask.IsRaw ? jsonTask.Data.ToString() : JsonConvert.SerializeObject(jsonTask.Data);
 
-            var x = db.TaskTests.Update(y);
+            var x = _db.TaskTests.Update(y);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
             bool ok = beforeState == Microsoft.EntityFrameworkCore.EntityState.Modified && afterState == Microsoft.EntityFrameworkCore.EntityState.Unchanged && r == 1;
 
@@ -265,7 +269,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             if (file != null)
             {
-                var isAlive = await CheckIfAlive(config.CompilerServicesOrchestrator);
+                var isAlive = await CheckIfAlive(_config.CompilerServicesOrchestrator);
 
                 if (isAlive)
                 {
@@ -275,7 +279,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                         Framework = framework
                     };
 
-                    string url = config.CompilerServicesOrchestrator.GetFullTaskLinkFrom(config.FrontEnd);
+                    string url = _config.CompilerServicesOrchestrator.GetFullTaskLinkFrom(_config.FrontEnd);
                     using var httpClient = new HttpClient();
                     using var form = JsonContent.Create(req);
                     HttpResponseMessage response = await httpClient.PostAsync(url, form);
@@ -389,7 +393,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             using var httpClient = new HttpClient();
 
-            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this.config.FrontEnd) + "/health");
+            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this._config.FrontEnd) + "/health");
 
             if (response.IsSuccessStatusCode)
             {

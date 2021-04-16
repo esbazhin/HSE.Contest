@@ -1,12 +1,11 @@
 ﻿using HSE.Contest.Areas.Administration.ViewModels;
-using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,33 +16,19 @@ namespace HSE.Contest.Areas.Administration.Controllers
     [Area("Administration")]
     public class GroupsController : Controller
     {
-        private readonly TestingSystemConfig config;
-        private readonly HSEContestDbContext db;
+        private readonly UserManager<User> _userManager;
+        private readonly HSEContestDbContext _db;
 
-        public GroupsController()
+        public GroupsController(UserManager<User> userManager, HSEContestDbContext db)
         {
-            string pathToConfig = "c:\\config\\config.json";
-            config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
-
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
-            db = new HSEContestDbContext(options.Options);
-        }
-
-        async Task<List<Group>> GetAllGroups()
-        {
-            return await db.Groups.Include(c => c.Users).ThenInclude(c => c.User).ToListAsync();
-        }
-
-        async Task<Group> GetGroup(int id)
-        {
-            return await db.Groups.Include(c => c.Users).ThenInclude(c => c.User).FirstOrDefaultAsync(m => m.Id == id);
+            _db = db;
+            _userManager = userManager;
         }
 
         async Task<List<TransferViewModel>> GetAllStudents()
         {
-            var res = await db.Users.Where(u => u.Roles.Select(ur => ur.Role.Name).Contains("student")).ToListAsync();
-            return res.Select(u => new TransferViewModel(u)).ToList();
+            var students = await _userManager.GetUsersInRoleAsync("student");
+            return students.Select(u => new TransferViewModel(u)).ToList();
         }
 
         public IActionResult Index()
@@ -53,7 +38,7 @@ namespace HSE.Contest.Areas.Administration.Controllers
 
         public IActionResult AllGroups()
         {
-            var records = db.Groups.Select(t => new CodeStyleRecordViewModel
+            var records = _db.Groups.Select(t => new CodeStyleRecordViewModel
             {
                 Id = t.Id,
                 Name = t.Name,
@@ -63,9 +48,9 @@ namespace HSE.Contest.Areas.Administration.Controllers
 
         public IActionResult DeleteGroup(int id)
         {
-            var y = db.Groups.Find(id);
-            db.Groups.Remove(y);
-            db.SaveChanges();
+            var y = _db.Groups.Find(id);
+            _db.Groups.Remove(y);
+            _db.SaveChanges();
             return RedirectToAction("AllGroups");
         }
 
@@ -76,7 +61,7 @@ namespace HSE.Contest.Areas.Administration.Controllers
 
         public IActionResult ChangeGroup(int id)
         {
-            var cur = db.Groups.Find(id);
+            var cur = _db.Groups.Find(id);
 
             if (cur is null)
             {
@@ -90,21 +75,21 @@ namespace HSE.Contest.Areas.Administration.Controllers
         {
             GroupViewModel groupRecord = JsonConvert.DeserializeObject<GroupViewModel>(json);
 
-            var y = db.Groups.Find(groupRecord.Id);
+            var y = _db.Groups.Find(groupRecord.Id);
 
             if (y is null)
             {
                 return Content("error");
             }
 
-            db.UserGroups.RemoveRange(y.Users);
+            _db.UserGroups.RemoveRange(y.Users);
 
             y.Name = groupRecord.Name;
-            y.Users = groupRecord.SelectedUsers.Select(u => new UserGroup { UserId = int.Parse(u), GroupId = groupRecord.Id }).ToList();            
+            y.Users = groupRecord.SelectedUsers.Select(u => new UserGroup { UserId = u, GroupId = groupRecord.Id }).ToList();            
 
-            var x = db.Groups.Update(y);
+            var x = _db.Groups.Update(y);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
             bool ok = beforeState == EntityState.Modified && afterState == EntityState.Unchanged;
 
@@ -117,12 +102,12 @@ namespace HSE.Contest.Areas.Administration.Controllers
             Group newGroup = new Group
             {
                 Name = groupRecord.Name,
-                Users = groupRecord.SelectedUsers.Select(u => new UserGroup { UserId = int.Parse(u), GroupId = groupRecord.Id }).ToList()
+                Users = groupRecord.SelectedUsers.Select(u => new UserGroup { UserId = u, GroupId = groupRecord.Id }).ToList()
             };
 
-            var x = db.Groups.Add(newGroup);
+            var x = _db.Groups.Add(newGroup);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
             bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged;
 

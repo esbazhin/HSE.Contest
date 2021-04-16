@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -18,17 +16,11 @@ namespace HSE.Contest.Areas.Administration.Controllers
     [Area("Administration")]
     public class CodeStyleRulesController : Controller
     {
-        private readonly TestingSystemConfig config;
-        private readonly HSEContestDbContext db;
+        private readonly HSEContestDbContext _db;
 
-        public CodeStyleRulesController()
+        public CodeStyleRulesController(HSEContestDbContext db)
         {
-            string pathToConfig = "c:\\config\\config.json";
-            config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
-
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
-            db = new HSEContestDbContext(options.Options);
+            _db = db;
         }
 
         public IActionResult Index()
@@ -38,7 +30,7 @@ namespace HSE.Contest.Areas.Administration.Controllers
 
         public IActionResult AllRecords()
         {
-            var records = db.CodeStyleFiles.Select(t => new CodeStyleRecordViewModel
+            var records = _db.CodeStyleFiles.Select(t => new CodeStyleRecordViewModel
             {
                 Id = t.Id,
                 Name = t.Name,
@@ -48,9 +40,9 @@ namespace HSE.Contest.Areas.Administration.Controllers
 
         public IActionResult DeleteRecord(int id)
         {
-            var y = db.CodeStyleFiles.Find(id);
-            db.CodeStyleFiles.Remove(y);
-            db.SaveChanges();
+            var y = _db.CodeStyleFiles.Find(id);
+            _db.CodeStyleFiles.Remove(y);
+            _db.SaveChanges();
             return RedirectToAction("AllRecords");
         }
 
@@ -61,7 +53,7 @@ namespace HSE.Contest.Areas.Administration.Controllers
 
         public IActionResult ChangeRecord(int id)
         {
-            var cur = db.CodeStyleFiles.Find(id);
+            var cur = _db.CodeStyleFiles.Find(id);
 
             if (cur is null)
             {
@@ -75,7 +67,7 @@ namespace HSE.Contest.Areas.Administration.Controllers
         {
             CodeStyleFilesViewModel jsonRecord = JsonConvert.DeserializeObject<CodeStyleFilesViewModel>(json);
 
-            var y = db.CodeStyleFiles.Find(jsonRecord.Id);
+            var y = _db.CodeStyleFiles.Find(jsonRecord.Id);
 
             if (y is null)
             {
@@ -87,9 +79,9 @@ namespace HSE.Contest.Areas.Administration.Controllers
             y.StyleCopFile = System.Text.Encoding.UTF8.GetBytes(jsonRecord.StyleCop);
 
 
-            var x = db.CodeStyleFiles.Update(y);
+            var x = _db.CodeStyleFiles.Update(y);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
             bool ok = beforeState == EntityState.Modified && afterState == EntityState.Unchanged && r == 1;
 
@@ -106,9 +98,9 @@ namespace HSE.Contest.Areas.Administration.Controllers
                 StyleCopFile = System.Text.Encoding.UTF8.GetBytes(jsonRecord.StyleCop)
             };
 
-            var x = db.CodeStyleFiles.Add(newRecord);
+            var x = _db.CodeStyleFiles.Add(newRecord);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
             bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
 

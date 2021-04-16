@@ -1,10 +1,13 @@
 ﻿using HSE.Contest.Areas.TestingSystem.ViewModels;
 using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.Communication.Requests;
+using HSE.Contest.ClassLibrary.DbClasses;
+using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
 using HSE.Contest.ClassLibrary.RabbitMQ;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -22,30 +25,20 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
     [Area("TestingSystem")]
     public class StudentController : TestingSystemController
     {
-        public StudentController() : base()
-        {           
+        private readonly string curId;
+        public StudentController(UserManager<User> userManager, HSEContestDbContext db, TestingSystemConfig config, IHttpContextAccessor httpContextAccessor) : base(db, config)
+        {
+            curId =  userManager.GetUserId(httpContextAccessor.HttpContext.User);
         }
 
         public IActionResult Index()
         {
             return RedirectToAction("AllTasks");
-        }       
-
-        //public async Task<IActionResult> Receive()
-        //{
-        //    IActionResult res = Content("empty");
-        //    await msgQueue.ReceiveAsync<TestRequest>("check", x =>
-        //    {
-        //        res = Json(x);
-        //    });
-
-        //    return res;
-        //}
+        }              
 
         public IActionResult AllTasks()
         {
-            int curId = GetId();
-            var tasks = db.StudentTasks.Where(t => t.Group.Users.Select(s => s.UserId).Contains(curId) && t.From <= DateTime.Now)
+            var tasks = _db.StudentTasks.Where(t => t.Group.Users.Select(s => s.UserId).Contains(curId) && t.From <= DateTime.Now)
             .Select(t => new TaskViewModel
             {
                 Id = t.Id,
@@ -78,14 +71,14 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         StudentTaskViewModel GetStudentTaskView(int taskId)
         {
-            var t = db.StudentTasks.Find(taskId);
+            var t = _db.StudentTasks.Find(taskId);
 
             if (t is null)
             {
                 return null;
             }
 
-            var solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == taskId).ToArray();
+            var solutions = _db.Solutions.Where(s => s.StudentId == curId && s.TaskId == taskId).ToArray();
             var solutionsViewModels = solutions.Select(s =>
             new SolutionViewModel
             {
@@ -106,7 +99,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 NumberOfAttempts = t.NumberOfAttempts,
                 CanSend = CanSend(t, solutions),
                 Result = "Нет решений",
-                FrameworkTypes = config.CompilerImages.Keys.ToArray()
+                FrameworkTypes = _config.CompilerImages.Keys.ToArray()
             };
 
             if (solutions.Length > 0)
@@ -130,7 +123,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             {
                 if (solutions is null)
                 {
-                    solutions = db.Solutions.Where(s => s.StudentId == GetId() && s.TaskId == task.Id).ToArray();
+                    solutions = _db.Solutions.Where(s => s.StudentId == curId && s.TaskId == task.Id).ToArray();
                 }
 
                 if (task.IsContest)
@@ -148,21 +141,21 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public IActionResult ViewSolutionReport(int id)
         {
-            var s = db.Solutions.Find(id);
+            var s = _db.Solutions.Find(id);
 
             if (s is null)
             {
                 return NotFound();
             }
 
-            var t = db.StudentTasks.Find(s.TaskId);
+            var t = _db.StudentTasks.Find(s.TaskId);
            
             if (CanSend(t))
             {
                 return Forbid();
             }
 
-            var testResults = db.TestingResults.Where(tr => tr.SolutionId == id).Join(db.TaskTests, i => i.TestId, o => o.Id, (i, o) => new TestingResultViewModel(i, o)).ToArray();
+            var testResults = _db.TestingResults.Where(tr => tr.SolutionId == id).Join(_db.TaskTests, i => i.TestId, o => o.Id, (i, o) => new TestingResultViewModel(i, o)).ToArray();
 
             var res = new SolutionReportViewModel
             {
@@ -185,7 +178,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public async Task<IActionResult> CheckSolution(IFormFile file, int taskId, string framework)
         {            
-            var task = db.StudentTasks.Find(taskId);
+            var task = _db.StudentTasks.Find(taskId);
 
             if (task == null)
             {
@@ -248,7 +241,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
                 var dataBytes = System.IO.File.ReadAllBytes(newfullZipFilePath);
 
-                int fileId = db.UploadFile(file.FileName, dataBytes);
+                int fileId = _db.UploadFile(file.FileName, dataBytes);
 
                 if (fileId == -1)
                 {
@@ -267,14 +260,14 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     TaskId = taskId,
                     FrameworkType = framework,
                     FileId = fileId,
-                    StudentId = GetId(),
+                    StudentId = curId,
                     ResultCode = ResultCode.NT,
                     Time = DateTime.Now,
                 };
 
-                var x = db.Solutions.Add(solution);
+                var x = _db.Solutions.Add(solution);
                 var beforeState = x.State;
-                int r = db.SaveChanges();
+                int r = _db.SaveChanges();
                 var afterState = x.State;
                 bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
             
@@ -290,13 +283,13 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
                 try
                 {
-                    var msgQueue = RabbitHutch.CreateBus(config.MessageQueueInfo, config.FrontEnd);
+                    var msgQueue = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.FrontEnd);
 
                     var request = new SolutionTestingRequest
                     {
                         SolutionId = solution.Id,
                     };
-                    await msgQueue.SendAsync(config.MessageQueueInfo.TestingQueueName, request);
+                    await msgQueue.SendAsync(_config.MessageQueueInfo.TestingQueueName, request);
                 }
                 catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException e)
                 {
@@ -331,7 +324,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
             foreach(var id in solIds)
             {
-                var s = db.Solutions.Find(id);
+                var s = _db.Solutions.Find(id);
 
                 if(s != null && s.ResultCode != ResultCode.NT)
                 {
@@ -374,7 +367,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
             foreach (var id in solIds)
             {
-                var s = db.Solutions.Find(id);
+                var s = _db.Solutions.Find(id);
 
                 if (s != null)
                 {
@@ -387,8 +380,8 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 bool update = false;
                 foreach (var id in solIds)
                 {                    
-                    var s = db.Solutions.Find(id);
-                    db.Entry(s).Reload();
+                    var s = _db.Solutions.Find(id);
+                    _db.Entry(s).Reload();
 
                     if (s != null && s.ResultCode != ResultCode.NT && curState[id] == ResultCode.NT)
                     {
@@ -422,7 +415,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         void CleanSolutionFiles(string dir)
         {
-            string gitignorePath = pathToConfigDir + "\\.gitignore";
+            string gitignorePath = _pathToConfigDir + "\\.gitignore";
             var patterns = System.IO.File.ReadAllLines(gitignorePath).Where(l => !string.IsNullOrEmpty(l) && !l.StartsWith("#")).ToList();
 
 
@@ -450,39 +443,6 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             {
                 System.IO.File.Delete(file);
             }
-        }
-
-        //bool WriteResultToDb(Solution solution, AllTestsResult result, int taskId, string solPath)
-        //{
-        //    if (solution == null)
-        //    {
-        //        var newSolution = new Solution
-        //        {
-        //            PathToSolution = solPath,
-        //            Results = result,
-        //            TaskId = taskId,
-        //            StudentId = GetId()
-        //        };
-
-        //        var x = db.Solutions.Add(newSolution);
-        //        var beforeState = x.State;
-        //        int r = db.SaveChanges();
-        //        var afterState = x.State;
-        //        bool ok = beforeState == Microsoft.EntityFrameworkCore.EntityState.Added && afterState == Microsoft.EntityFrameworkCore.EntityState.Unchanged && r == 1;
-        //        return ok;
-        //    }
-        //    else
-        //    {
-        //        solution.Results = result;
-        //        solution.PathToSolution = solPath;
-
-        //        var x = db.Solutions.Update(solution);
-        //        var beforeState = x.State;
-        //        int r = db.SaveChanges();
-        //        var afterState = x.State;
-        //        bool ok = beforeState == Microsoft.EntityFrameworkCore.EntityState.Modified && afterState == Microsoft.EntityFrameworkCore.EntityState.Unchanged && r == 1;
-        //        return ok;
-        //    }
-        //}
+        }       
     }
 }

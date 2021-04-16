@@ -3,6 +3,9 @@
     ViewData["Title"] = "Новая группа";
 }
 
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Groups", action = "AllGroups", area = "Administration" })
+}
 @section ManageCodeStyle{
     @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
 }

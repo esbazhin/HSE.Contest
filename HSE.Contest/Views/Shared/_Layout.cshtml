@@ -25,7 +25,7 @@
                 mode="horizontal"
                 :style="{ lineHeight: '64px' }"
             >
-                <a-menu-item key="logo">@Html.RouteLink("HSE.Contest", new {action = "Index"})</a-menu-item>
+                <a-menu-item key="logo">@Html.RouteLink("HSE.Contest", new { controller = "Account", action = "Index", area = "Administration" })</a-menu-item>
             @if(IsSectionDefined("Back"))
             {
 
@@ -47,7 +47,7 @@
                 <a-menu-item key="tasks">@RenderSection("ManageTasks")</a-menu-item>
             }
 
-                <a-menu-item key="logout" style="float: right"> @Html.RouteLink("Logout", new { controller = "Users", action = "Logout", area = "Administration"})</a-menu-item>
+                <a-menu-item key="logout" style="float: right"> @Html.RouteLink("Logout", new { controller = "Account", action = "Logout", area = "Administration"})</a-menu-item>
             </a-menu>
 
 

@@ -19,36 +19,32 @@ namespace TestingSystemService
     public class TestingSystemWorker : BackgroundService
     {
         private readonly IBus _busControl;
-        private readonly TestingSystemConfig config;
-        private readonly HSEContestDbContext db;
+        private readonly TestingSystemConfig _config;
+        private readonly HSEContestDbContext _db;
         public TestingSystemWorker()
         {
-            string pathToConfig = "c:\\config\\config.json";
-            config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
+            _config = new TestingSystemConfigFactory().CreateApplicationConfig();
+            _db = new HSEContestDbContextFactory().CreateApplicationDbContext();
 
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.TestingSystemWorker));
-            db = new HSEContestDbContext(options.Options);
-
-            _busControl = RabbitHutch.CreateBus(config.MessageQueueInfo, config.TestingSystemWorker);
+            _busControl = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.TestingSystemWorker);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _busControl.ReceiveAsync<SolutionTestingRequest>(config.MessageQueueInfo.TestingQueueName, x => CheckSolution(x).Start());
+            await _busControl.ReceiveAsync<SolutionTestingRequest>(_config.MessageQueueInfo.TestingQueueName, x => CheckSolution(x).Start());
         }
 
         public async Task<TestingSystemResponse> CheckSolution(SolutionTestingRequest solutionRequest)
         {
-            var solution = db.Solutions.Find(solutionRequest.SolutionId);
+            var solution = _db.Solutions.Find(solutionRequest.SolutionId);
 
             if (solution != null && solution.File != null)
             {
-                var taskTests = db.TaskTests.Where(t => t.TaskId == solution.TaskId).ToArray();
+                var taskTests = _db.TaskTests.Where(t => t.TaskId == solution.TaskId).ToArray();
 
                 if (taskTests != null && taskTests.Length > 0)
                 {
-                    var isAlive = await CheckIfAlive(config.CompilerServicesOrchestrator);
+                    var isAlive = await CheckIfAlive(_config.CompilerServicesOrchestrator);
 
                     if (isAlive)
                     {
@@ -61,7 +57,7 @@ namespace TestingSystemService
                             TestId = codeStyleTask is null ? -1 : codeStyleTask.Id
                         };
 
-                        string url = config.CompilerServicesOrchestrator.GetFullTestLinkFrom(config.TestingSystemWorker);
+                        string url = _config.CompilerServicesOrchestrator.GetFullTestLinkFrom(_config.TestingSystemWorker);
                         using var httpClient = new HttpClient();
                         using var form = JsonContent.Create(req);
                         HttpResponseMessage response = await httpClient.PostAsync(url, form);
@@ -72,7 +68,7 @@ namespace TestingSystemService
 
                             if (compResponse.OK && compResponse.Result == ResultCode.OK)
                             {
-                                var compResult = db.CompilationResults.Find(solutionRequest.SolutionId);
+                                var compResult = _db.CompilationResults.Find(solutionRequest.SolutionId);
 
                                 if (compResult != null)
                                 {
@@ -81,7 +77,7 @@ namespace TestingSystemService
                                         var testTasks = new List<Task<TestResponse>>();
                                         foreach (var test in taskTests)
                                         {
-                                            if (config.Tests.ContainsKey(test.TestType))
+                                            if (_config.Tests.ContainsKey(test.TestType))
                                             {
                                                 testTasks.Add(StartTest(test.TestType, solutionRequest.SolutionId, test.Id));
                                             }
@@ -147,7 +143,7 @@ namespace TestingSystemService
         {
             using var httpClient = new HttpClient();
 
-            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this.config.TestingSystemWorker) + "/health");
+            HttpResponseMessage response = await httpClient.GetAsync(config.GetHostLinkFrom(this._config.TestingSystemWorker) + "/health");
 
             if (response.IsSuccessStatusCode)
             {
@@ -163,7 +159,7 @@ namespace TestingSystemService
 
         async Task<TestResponse> StartTest(string testName, int solutionId, int testId)
         {
-            var serviceConfig = config.Tests[testName];
+            var serviceConfig = _config.Tests[testName];
             var isAlive = await CheckIfAlive(serviceConfig);
 
             if (isAlive)
@@ -176,7 +172,7 @@ namespace TestingSystemService
 
                 using var httpClient = new HttpClient();
                 using var form = JsonContent.Create(req);
-                var url = serviceConfig.GetFullTestLinkFrom(config.TestingSystemWorker);
+                var url = serviceConfig.GetFullTestLinkFrom(_config.TestingSystemWorker);
                 HttpResponseMessage response = await httpClient.PostAsync(url, form);
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
@@ -226,7 +222,7 @@ namespace TestingSystemService
 
         TestResponse WriteTestResponseToDb(TestResponse resp, int solutionId, int testId)
         {
-            var testResult = db.TestingResults.FirstOrDefault(t => t.SolutionId == solutionId && t.TestId == testId);
+            var testResult = _db.TestingResults.FirstOrDefault(t => t.SolutionId == solutionId && t.TestId == testId);
 
             if (testResult is null)
             {
@@ -238,9 +234,9 @@ namespace TestingSystemService
                     TestId = testId,
                     ResultCode = resp.Result,
                 };
-                var x = db.TestingResults.Add(res);
+                var x = _db.TestingResults.Add(res);
                 var beforeState = x.State;
-                int r = db.SaveChanges();
+                int r = _db.SaveChanges();
                 var afterState = x.State;
 
                 bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
@@ -293,7 +289,7 @@ namespace TestingSystemService
 
             solution.ResultCode = totalResult;
             solution.Score = totalScore;
-            db.SaveChanges();
+            _db.SaveChanges();
 
             return new TestingSystemResponse
             {

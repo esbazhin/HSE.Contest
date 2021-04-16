@@ -1,6 +1,9 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
+using HSE.Contest.ClassLibrary;
+using HSE.Contest.ClassLibrary.DbClasses;
+using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,13 +22,23 @@ namespace HSE.Contest
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // установка конфигурации подключения
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(options => //CookieAuthenticationOptions
-                {
-                    options.LoginPath = new Microsoft.AspNetCore.Http.PathString("/Administration/Users/Login");
-                    options.AccessDeniedPath = new Microsoft.AspNetCore.Http.PathString("/Administration/Users/AccessDenied");
-                });
+            services.AddHttpContextAccessor();
+
+            services.AddTransient<TestingSystemConfigFactory>();
+            services.AddTransient(provider => provider.GetService<TestingSystemConfigFactory>().CreateApplicationConfig());
+
+            services.AddTransient<HSEContestDbContextFactory>();
+            services.AddTransient(provider => provider.GetService<HSEContestDbContextFactory>().CreateApplicationDbContext());
+
+            services.AddIdentity<User, IdentityRole>(opts => {
+                opts.User.RequireUniqueEmail = true;
+                opts.Password.RequiredLength = 5;   // минимальная длина
+                opts.Password.RequireNonAlphanumeric = false;   // требуются ли не алфавитно-цифровые символы
+                opts.Password.RequireLowercase = false; // требуются ли символы в нижнем регистре
+                opts.Password.RequireUppercase = false; // требуются ли символы в верхнем регистре
+                opts.Password.RequireDigit = false; // требуются ли цифры
+            })
+                .AddEntityFrameworkStores<HSEContestDbContext>();
 
             services.AddMvc().AddMvcOptions(opt => opt.EnableEndpointRouting = false);
 
@@ -51,10 +64,10 @@ namespace HSE.Contest
             app.UseAuthorization();
 
             app.UseMvc(routes =>
-            {
+            {                
                 routes.MapRoute(
                    name: "default",
-                   template: "{area=Administration}/{controller=Users}/{action=Index}");
+                   template: "{area=Administration}/{controller=Account}/{action=Index}");
             });
         }
     }

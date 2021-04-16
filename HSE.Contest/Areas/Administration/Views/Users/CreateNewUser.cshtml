@@ -1,0 +1,122 @@
+﻿@model UserCRUDViewModel
+@{
+    ViewData["Title"] = "Новый пользователь";
+}
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Users", action = "AllUsers", area = "Administration" })
+}
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
+
+<h1>Новый пользователь</h1>
+
+<div id="app"></div>
+
+@section Scripts{
+    <script>
+let allRoles = @Json.Serialize(Model.AllRoles);
+let allGroups = @Json.Serialize(Model.AllGroups);
+
+let user = @Json.Serialize(Model.User);
+
+let isUpdate = @Json.Serialize(Model.IsUpdate);
+
+new Vue({
+		el: '#app',
+		data: {
+            allRoles: allRoles,
+            allGroups: allGroups,
+            user: user,
+			isUpdate: isUpdate,
+		},
+        methods: {
+        send: function () {
+            var http = new XMLHttpRequest();
+            var url = './PostNewUser';
+                var data = 'json=' + encodeURIComponent(JSON.stringify(this.user));
+            if (this.isUpdate) {
+                url = './UpdateUser';
+            }
+            http.open('POST', url, true);
+
+            //Send the proper header information along with the request
+            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+            var that = this;
+            http.onreadystatechange = function () {//Call a function when the state changes.
+                const response = JSON.parse(http.responseText);
+                if (response.status != 'error') {
+                    document.location.href = response.data;
+                }
+                else {
+                    that.$message.error('An error occured. Try again! Error: ' + response.data);
+                }
+            }
+            http.send(data);
+            },
+        handleRolesChange(targetKeys, direction, moveKeys) {
+            this.user.selectedRoles = targetKeys;
+        },
+        handleGroupsChange(targetKeys, direction, moveKeys) {
+            this.user.selectedGroups = targetKeys;
+        },
+    },
+
+		template: `
+		<div>
+		<a-collapse :bordered="true" :activeKey="[1,2,3]">
+		<a-collapse-panel header="Введите общие данные пользователя:" key="1">
+        <a-form>
+            <a-form-model-item label="Имя">
+                <a-input type="test" v-model="user.firstName" />
+            </a-form-model-item>
+            <a-form-model-item label="Фамилия">
+                <a-input type="test" v-model="user.lastName" />
+            </a-form-model-item>
+            <a-form-model-item label="Почта">
+                <a-input type="test" v-model="user.email" />
+            </a-form-model-item>
+            <div v-if="!isUpdate">
+            <a-form-model-item label="Пароль">
+                <a-input type="test" v-model="user.password" />
+            </a-form-model-item>
+            </div>
+        </a-form>
+		</a-collapse-panel>
+		<a-collapse-panel header="Выберите роли:" key="2">
+            <a-transfer
+                :data-source="allRoles"
+                show-search
+                :target-keys="user.selectedRoles"
+                :render="item => item.title"
+                @@change="handleRolesChange"
+            />
+		</a-collapse-panel>
+
+        <a-collapse-panel header="Выберите группы:" key="3">
+            <a-transfer
+                :data-source="allGroups"
+                show-search
+                :target-keys="user.selectedGroups"
+                :render="item => item.title"
+                @@change="handleGroupsChange"
+            />
+		</a-collapse-panel>
+
+		</a-collapse>
+		<a-popconfirm
+			title="Sure to send?"
+			@@confirm="send"
+        >
+			<a-button block type="submit">Сохранить</a-button>
+        </a-popconfirm>
+	</div>
+		`,
+	});
+    </script>
+}

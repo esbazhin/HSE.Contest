@@ -11,31 +11,7 @@ namespace HSE.Contest.Areas.Administration.ViewModels
         public List<TransferViewModel> AllStudents { get; set; }
         public bool IsUpdate { get; set; }
     }
-
-    public class TransferViewModel
-    {
-        public string Title { get; set; }
-        public string Key { get; set; }
-
-        [JsonConstructor]
-        public TransferViewModel()
-        { }
-
-        public TransferViewModel(User user)
-        {
-            if (user is null)
-            {
-                Title = "new user";
-                Key = "-1";
-            }
-            else
-            {
-                Title = user.FirstName + " " + user.LastName;
-                Key = user.Id.ToString();
-            }
-        }
-    }
-
+   
     public class GroupViewModel
     {
         public string Name { get; set; }

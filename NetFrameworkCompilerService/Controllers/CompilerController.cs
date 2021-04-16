@@ -21,15 +21,15 @@ namespace NetFrameworkCompilerService.Controllers
     [ApiController]
     public class CompilerController : ControllerBase
     {
-        string addFilesPath = "/home/NetFrameworkFiles";
-        string rulesetFileName = "rules.ruleset";
-        string stylecopFileName = "stylecop.json";
+        private readonly string addFilesPath = "/home/NetFrameworkFiles";
+        private readonly string rulesetFileName = "rules.ruleset";
+        private readonly string stylecopFileName = "stylecop.json";
 
-        HSEContestDbContext db;
+        private readonly HSEContestDbContext _db;
 
-        public CompilerController(HSEContestDbContext context)
+        public CompilerController(HSEContestDbContext db)
         {
-            db = context;
+            _db = db;
         }
 
         //[HttpPost]
@@ -52,7 +52,7 @@ namespace NetFrameworkCompilerService.Controllers
         {
             try
             {
-                var solution = db.Solutions.Find(request.SolutionId);
+                var solution = _db.Solutions.Find(request.SolutionId);
 
                 if (solution is null)
                 {
@@ -141,7 +141,7 @@ namespace NetFrameworkCompilerService.Controllers
 
                         var dataBytes = System.IO.File.ReadAllBytes(compilationPath);
 
-                        int fileId = db.UploadFile(compFileName, dataBytes);
+                        int fileId = _db.UploadFile(compFileName, dataBytes);
 
                         result = new CompilationResult
                         {
@@ -181,18 +181,18 @@ namespace NetFrameworkCompilerService.Controllers
 
         TestResponse WriteToDb(CompilationResult res, Solution sol)
         {
-            var x = db.CompilationResults.Add(res);
+            var x = _db.CompilationResults.Add(res);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
 
             bool ok = false;
             if (beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1)
             {
                 sol.CompilationId = res.SolutionId;
-                var x1 = db.Solutions.Update(sol);
+                var x1 = _db.Solutions.Update(sol);
                 beforeState = x1.State;
-                r = db.SaveChanges();
+                r = _db.SaveChanges();
                 afterState = x1.State;
 
                 ok = beforeState == EntityState.Modified && afterState == EntityState.Unchanged && r == 1;
@@ -224,7 +224,7 @@ namespace NetFrameworkCompilerService.Controllers
 
         bool UpdateRulesFiles(int testId)
         {
-            var task = db.TaskTests.Find(testId);
+            var task = _db.TaskTests.Find(testId);
 
             if (task is null)
             {
@@ -238,7 +238,7 @@ namespace NetFrameworkCompilerService.Controllers
                 return true;
             }
 
-            CodeStyleFiles files = db.CodeStyleFiles.Find(data.CodeStyleFilesId);
+            CodeStyleFiles files = _db.CodeStyleFiles.Find(data.CodeStyleFilesId);
 
             if (files is null)
             {

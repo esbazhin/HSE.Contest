@@ -21,15 +21,10 @@ namespace ReflectionTesterService.Controllers
     [ApiController]
     public class ReflectionTesterController : ControllerBase
     {
-        HSEContestDbContext db;
-        public ReflectionTesterController()
+        private readonly HSEContestDbContext _db;
+        public ReflectionTesterController(HSEContestDbContext db)
         {
-            string pathToConfig = "c:\\config\\config.json";
-            var config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
-
-            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
-            options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.Tests["reflectionTest"]));
-            db = new HSEContestDbContext(options.Options);
+            _db = db;
         }
 
         [HttpPost]
@@ -37,7 +32,7 @@ namespace ReflectionTesterService.Controllers
         {
             try
             {
-                var solution = db.Solutions.Find(request.SolutionId);
+                var solution = _db.Solutions.Find(request.SolutionId);
 
                 if (solution is null)
                 {
@@ -50,7 +45,7 @@ namespace ReflectionTesterService.Controllers
                     };
                 }
 
-                var compilation = db.CompilationResults.Find(request.SolutionId);
+                var compilation = _db.CompilationResults.Find(request.SolutionId);
 
                 if (compilation is null)
                 {
@@ -144,9 +139,9 @@ namespace ReflectionTesterService.Controllers
 
         TestResponse WriteToDb(TestingResult res)
         {
-            var x = db.TestingResults.Add(res);
+            var x = _db.TestingResults.Add(res);
             var beforeState = x.State;
-            int r = db.SaveChanges();
+            int r = _db.SaveChanges();
             var afterState = x.State;
 
             bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
@@ -201,7 +196,7 @@ namespace ReflectionTesterService.Controllers
 
         async Task<ReflectionTestResult> TestReflection(string pathToDll, int testId)
         {
-            var task = db.TaskTests.Find(testId);
+            var task = _db.TaskTests.Find(testId);
             var data = JsonConvert.DeserializeObject<ReflectionTestData>(task.TestData);
             Assembly ass = Assembly.Load(System.IO.File.ReadAllBytes(pathToDll));
             var tasks = new List<Task<List<SingleReflectionTestResult>>>();

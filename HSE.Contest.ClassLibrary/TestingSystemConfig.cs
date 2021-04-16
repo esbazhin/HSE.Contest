@@ -11,15 +11,8 @@ namespace HSE.Contest.ClassLibrary
         public ContainerConfig TestingSystemWorker { get; set; }
         public ServiceConfig CompilerServicesOrchestrator { get; set; }
         public Dictionary<string, ServiceConfig> Tests { get; set; }
-        //public ServiceConfig FunctionalTestingServicesOrchestrator { get; set; }
-        //public ServiceConfig CodeStyleTesterService { get; set; }
-        //public ServiceConfig ReflectionTesterService { get; set; }
-        //public ServiceConfig FileManagerService { get; set; }
-
         public Dictionary<string, ImageConfig> CompilerImages { get; set; }
-        public Dictionary<string, ImageConfig> FunctionalTesterImages { get; set; }
-        //public ImagesConfig CompilerImages { get; set; }
-        //public ImagesConfig FunctionalTesterImages { get; set; }       
+        public Dictionary<string, ImageConfig> FunctionalTesterImages { get; set; }     
     }
 
     public class ContainerConfig
