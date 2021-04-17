@@ -23,8 +23,12 @@ namespace TestingSystemService
         private readonly HSEContestDbContext _db;
         public TestingSystemWorker()
         {
-            _config = new TestingSystemConfigFactory().CreateApplicationConfig();
-            _db = new HSEContestDbContextFactory().CreateApplicationDbContext();
+            string pathToConfig = "c:\\config\\config.json";
+            _config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
+
+            DbContextOptionsBuilder<HSEContestDbContext> options = new DbContextOptionsBuilder<HSEContestDbContext>();
+            options.UseNpgsql(_config.DatabaseInfo.GetConnectionStringFrom(_config.FrontEnd));
+            _db = new HSEContestDbContext(options.Options);
 
             _busControl = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.TestingSystemWorker);
         }

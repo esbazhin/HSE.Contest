@@ -1,13 +1,16 @@
+using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.DbClasses;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -25,8 +28,15 @@ namespace CodeStyleTesterService
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddTransient<HSEContestDbContextFactory>();
-            services.AddTransient(provider => provider.GetService<HSEContestDbContextFactory>().CreateApplicationDbContext());
+            string pathToConfig = "c:\\config\\config.json";
+
+            services.AddScoped<TestingSystemConfig>(options => JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig)));
+
+            services.AddDbContext<HSEContestDbContext>(options =>
+            {
+                var config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
+                options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
+            });
 
             services.AddHealthChecks();
             services.AddControllers();
@@ -60,7 +70,7 @@ namespace CodeStyleTesterService
         private async Task JsonResponseWriter(HttpContext context, HealthReport report)
         {
             context.Response.ContentType = "application/json";
-            await JsonSerializer.SerializeAsync(context.Response.Body, new { Status = report.Status.ToString() },
+            await System.Text.Json.JsonSerializer.SerializeAsync(context.Response.Body, new { Status = report.Status.ToString() },
                 new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
         }
     }

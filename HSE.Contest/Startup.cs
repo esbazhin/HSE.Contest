@@ -4,9 +4,11 @@ using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 
 namespace HSE.Contest
 {
@@ -23,12 +25,16 @@ namespace HSE.Contest
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpContextAccessor();
+           
+            string pathToConfig = "c:\\config\\config.json";
 
-            services.AddTransient<TestingSystemConfigFactory>();
-            services.AddTransient(provider => provider.GetService<TestingSystemConfigFactory>().CreateApplicationConfig());
+            services.AddScoped<TestingSystemConfig>(options => JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig)));
 
-            services.AddTransient<HSEContestDbContextFactory>();
-            services.AddTransient(provider => provider.GetService<HSEContestDbContextFactory>().CreateApplicationDbContext());
+            services.AddDbContext<HSEContestDbContext>(options =>
+            {               
+                var config = JsonConvert.DeserializeObject<TestingSystemConfig>(System.IO.File.ReadAllText(pathToConfig));
+                options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
+            });
 
             services.AddIdentity<User, IdentityRole>(opts => {
                 opts.User.RequireUniqueEmail = true;

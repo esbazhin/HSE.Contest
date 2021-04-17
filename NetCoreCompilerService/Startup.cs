@@ -27,8 +27,8 @@ namespace NetCoreCompilerService
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //string connection = Environment.GetEnvironmentVariable("db_connection");
-            string connection = "Host=host.docker.internal;Port=5432;Database=vyshkaContest;Username=NetCoreServer;Password=qwerty12345";
+            string connection = Environment.GetEnvironmentVariable("db_connection");
+            //string connection = "Host=host.docker.internal;Port=5432;Database=vyshkaContest;Username=NetCoreServer;Password=qwerty12345";
             services.AddDbContext<HSEContestDbContext>(options => options.UseNpgsql(connection));
 
             services.AddHealthChecks();
