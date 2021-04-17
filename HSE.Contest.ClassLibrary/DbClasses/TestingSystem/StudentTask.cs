@@ -38,6 +38,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
 
         [JsonIgnore]
         public virtual List<TaskTest> Tests { get; set; } = new List<TaskTest>();
+        public virtual List<StudentResult> Results { get; set; } = new List<StudentResult>();
 
         private readonly JsonSerializerSettings serializerSettings = new JsonSerializerSettings
         {

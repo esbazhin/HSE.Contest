@@ -293,6 +293,26 @@ namespace TestingSystemService
 
             solution.ResultCode = totalResult;
             solution.Score = totalScore;
+
+            //проверяем результат студента, если этот лучше - обновляем
+            var studentResult = _db.StudentResults.Find(solution.StudentId, solution.TaskId);
+
+            if(studentResult is null)
+            {
+                var newResult = new StudentResult
+                {
+                    StudentId = solution.StudentId,
+                    TaskId = solution.TaskId,
+                    SolutionId = solution.Id
+                };
+
+                _db.StudentResults.Add(newResult);
+            }
+            else if((studentResult.Solution.Score < solution.Score) || (studentResult.Solution.Score == solution.Score && studentResult.Solution.Time <= solution.Time))
+            {
+                studentResult.SolutionId = solution.Id;
+            }
+
             _db.SaveChanges();
 
             return new TestingSystemResponse

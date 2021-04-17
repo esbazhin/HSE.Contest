@@ -102,15 +102,13 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 FrameworkTypes = _config.CompilerImages.Keys.ToArray()
             };
 
-            if (solutions.Length > 0)
-            {
-                var maxScore = solutionsViewModels.Max(s => s.TotalScore);
+            var studentResult = _db.StudentResults.Find(curId, taskId);
 
-                var selectedSolution = solutionsViewModels.Where(s => s.TotalScore == maxScore).OrderByDescending(s => s.Time).First();
-
-                res.TotalScore = selectedSolution.TotalScore;
-                res.Result = selectedSolution.Result;
-            }
+            if (studentResult != null)
+            {               
+                res.TotalScore = studentResult.Solution.Score;
+                res.Result = studentResult.Solution.ResultCode.ToString();
+            }            
 
             return res;          
         }
@@ -222,6 +220,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 }
                 ZipFile.ExtractToDirectory(fullZipFilePath, fullDirPath, true);
 
+                //ищем файл проекта
                 var pathToProj = FindProjectFile(dir);
 
                 if (pathToProj == null)
@@ -234,11 +233,14 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     return Json(response2);
                 }
 
+                //чистим от бинарных файлов
                 CleanSolutionFiles(fullDirPath);
 
+                //сжимаем очищенные файлы обратно в архив
                 string newfullZipFilePath = dirPath + "/cleaned_" + file.FileName;
                 ZipFile.CreateFromDirectory(fullDirPath, newfullZipFilePath);
 
+                //записываем файл с архивом в базу
                 var dataBytes = System.IO.File.ReadAllBytes(newfullZipFilePath);
 
                 int fileId = _db.UploadFile(file.FileName, dataBytes);
@@ -255,6 +257,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
                 dir.Delete(true);
 
+                //записываем новое решение в базу
                 var solution = new Solution
                 {
                     TaskId = taskId,
@@ -276,11 +279,42 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     var response2 = new
                     {
                         status = "error",
-                        data = "Error on writing to db!"
+                        data = "Error on writing solution to db!"
                     };
                     return Json(response2);
                 }
 
+                //если это первое решение - записываем как результат
+                var studentResult = _db.StudentResults.Find(curId, taskId);
+
+                if (studentResult is null)
+                {
+                    var newResult = new StudentResult
+                    {
+                        StudentId = curId,
+                        TaskId = taskId,
+                        SolutionId = solution.Id
+                    };
+
+                    var x1 = _db.StudentResults.Add(newResult);
+                    beforeState = x1.State;
+                    r = _db.SaveChanges();
+                    afterState = x1.State;
+                    ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
+
+                    if (!ok)
+                    {
+                        var response2 = new
+                        {
+                            status = "error",
+                            data = "Error on writing result to db!"
+                        };
+                        return Json(response2);
+                    }
+                }
+
+
+                //запускаем тестирование посылая сообщение микросервису
                 try
                 {
                     var msgQueue = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.FrontEnd);

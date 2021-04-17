@@ -9,6 +9,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses
     public class HSEContestDbContext : IdentityDbContext<User>
     {
         public DbSet<StudentTask> StudentTasks { get; set; }
+        public DbSet<StudentResult> StudentResults { get; set; }
         public DbSet<DbFileInfo> Files { get; set; }
         public DbSet<Solution> Solutions { get; set; }
         public DbSet<CompilationResult> CompilationResults { get; set; }
@@ -65,6 +66,19 @@ namespace HSE.Contest.ClassLibrary.DbClasses
                 .HasOne(sc => sc.Group)
                 .WithMany(c => c.Users)
                 .HasForeignKey(sc => sc.GroupId);
+
+            modelBuilder.Entity<StudentResult>()
+                .HasKey(t => new { t.StudentId, t.TaskId });
+
+            modelBuilder.Entity<StudentResult>()
+                .HasOne(sc => sc.Student)
+                .WithMany(s => s.Results)
+                .HasForeignKey(sc => sc.StudentId);
+
+            modelBuilder.Entity<StudentResult>()
+                .HasOne(sc => sc.Task)
+                .WithMany(c => c.Results)
+                .HasForeignKey(sc => sc.TaskId);
         }
 
         public int UploadFile(string name, byte[] content)
