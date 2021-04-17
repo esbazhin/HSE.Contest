@@ -25,3 +25,6 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
 
+  plagiarismcheckerworkerservice:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development

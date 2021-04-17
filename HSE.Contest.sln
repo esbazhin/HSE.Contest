@@ -31,7 +31,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HSE.Contest", "HSE.Contest\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestingSystemService", "TestingSystemService\TestingSystemService.csproj", "{C1592DAE-8506-4ADF-883B-D49FE8088FAA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckMoss", "..\CheckMoss\CheckMoss.csproj", "{5560F6E3-4757-4503-ACB4-8FB72F280489}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CheckMoss", "..\CheckMoss\CheckMoss.csproj", "{5560F6E3-4757-4503-ACB4-8FB72F280489}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlagiarismCheckerWorkerService", "PlagiarismCheckerWorkerService\PlagiarismCheckerWorkerService.csproj", "{FBD06755-E5D7-4F78-AD45-B282562D296A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +93,10 @@ Global
 		{5560F6E3-4757-4503-ACB4-8FB72F280489}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5560F6E3-4757-4503-ACB4-8FB72F280489}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5560F6E3-4757-4503-ACB4-8FB72F280489}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBD06755-E5D7-4F78-AD45-B282562D296A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBD06755-E5D7-4F78-AD45-B282562D296A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBD06755-E5D7-4F78-AD45-B282562D296A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBD06755-E5D7-4F78-AD45-B282562D296A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

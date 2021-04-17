@@ -73,3 +73,12 @@ services:
       - "8888:80"
     volumes:
       - c:\config:c:\config:ro
+
+  plagiarismcheckerworkerservice:
+    image: ${DOCKER_REGISTRY-}plagiarismcheckerworkerservice
+    restart: always
+    build:
+      context: .
+      dockerfile: PlagiarismCheckerWorkerService\Dockerfile
+    volumes:
+      - c:\config:c:\config:ro

@@ -4,6 +4,7 @@ namespace HSE.Contest.ClassLibrary
 {
     public class TestingSystemConfig
     {
+        public long MossId { get; set; }
         public DbConfig DatabaseInfo { get; set; }
 
         public RabbitMQConfig MessageQueueInfo { get; set; }
@@ -74,6 +75,7 @@ namespace HSE.Contest.ClassLibrary
         public string Username { get; set; }
         public string Password { get; set; }
         public string TestingQueueName { get; set; }
+        public string PlagiarismQueueName { get; set; }
     }
 
     //public class ImagesConfig

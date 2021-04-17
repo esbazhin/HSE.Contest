@@ -19,6 +19,9 @@ namespace HSE.Contest.ClassLibrary.DbClasses
         public DbSet<Group> Groups { get; set; }
         public DbSet<UserGroup> UserGroups { get; set; }
 
+        public DbSet<PlagiarismCheck> PlagiarismChecks { get; set; }
+        public DbSet<PlagiarismResult> PlagiarismResults { get; set; }
+
 
         public HSEContestDbContext(DbContextOptions<HSEContestDbContext> options)
             : base(options)
@@ -79,6 +82,12 @@ namespace HSE.Contest.ClassLibrary.DbClasses
                 .HasOne(sc => sc.Task)
                 .WithMany(c => c.Results)
                 .HasForeignKey(sc => sc.TaskId);
+
+            modelBuilder.Entity<PlagiarismCheck>()
+                .HasKey(t => t.TaskId);
+
+            modelBuilder.Entity<PlagiarismResult>()
+                .HasKey(t => new { t.SolutionId1, t.SolutionId2 });
         }
 
         public int UploadFile(string name, byte[] content)

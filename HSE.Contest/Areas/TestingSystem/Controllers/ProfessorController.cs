@@ -3,8 +3,8 @@ using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.Communication.Requests;
 using HSE.Contest.ClassLibrary.Communication.Responses;
 using HSE.Contest.ClassLibrary.DbClasses;
-using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
+using HSE.Contest.ClassLibrary.RabbitMQ;
 using HSE.Contest.ClassLibrary.TestsClasses.ReflectionTest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -58,7 +58,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             var groups = _db.Groups.Select(g => new GroupViewModel(g)).ToList();
             var testTypes = _config.Tests.Keys.Select(k => new TestType(k)).ToList();
-            if(groups.Count == 0)
+            if (groups.Count == 0)
             {
                 return NoContent();
             }
@@ -96,7 +96,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             if (y is null)
             {
                 NotFound();
-            }           
+            }
 
             var task = _db.StudentTasks.Find(y.TaskId);
 
@@ -104,7 +104,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             {
                 NotFound();
             }
-           
+
             var codeStyleFiles = _db.CodeStyleFiles.Select(f => new CodeStyleFilesViewModel(f)).ToArray();
 
             return View(new TaskTestViewModel(y, task, _config.CompilerImages.Keys.ToArray(), codeStyleFiles));
@@ -203,7 +203,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             return Content(ok ? "/TestingSystem/Professor/ChangeTask?id=" + x.Entity.Id.ToString() : "error");
         }
 
-        public IActionResult PostNewTask(string json)
+        public async Task<IActionResult> PostNewTask(string json)
         {
             TaskViewModelNew jsonTask = JsonConvert.DeserializeObject<TaskViewModelNew>(json);
             StudentTask newTask = new StudentTask
@@ -238,6 +238,39 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 _db.TaskTests.AddRange(newTaskTests);
                 r = _db.SaveChanges();
                 ok = r == newTaskTests.Length;
+            }
+
+            if (ok)
+            {
+                var plagCheck = new PlagiarismCheck
+                {
+                    TaskId = newTask.Id,
+                    Settings = new PlagiarismCheckSettings
+                    {
+                        Language = "csharp",
+                        MaxMatches = 5,
+                        MinPercent = 0.4,
+                        MakeCheck = false
+                    }
+                };
+
+                _db.Add(plagCheck);
+                _db.SaveChanges();
+                
+                try
+                {
+                    var msgQueue = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.FrontEnd);
+
+                    var request = new PlagiarismCheckRequest
+                    {
+                        TaskId = newTask.Id,
+                    };
+                    await msgQueue.SendAsync(_config.MessageQueueInfo.PlagiarismQueueName, request);
+                }
+                catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException e)
+                {
+                    return Content("error");
+                }
             }
 
             return Content(ok ? "/TestingSystem/Professor/ChangeTask?id=" + newTask.Id.ToString() : "error");
@@ -311,7 +344,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                             {
                                 pathToDll = FindAssemblyFile(dir, ".exe");
                                 if (pathToDll == null)
-                                {                                   
+                                {
                                     var result = ConvertProject(pathToDll);
 
                                     var response1 = new
@@ -418,6 +451,6 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         private List<ClassDefinition> GetAllClasses(Assembly ass)
         {
             return ass.GetTypes().Where(t => t.IsClass).Select((t, i) => new ClassDefinition(t, i)).ToList();
-        }      
+        }
     }
 }

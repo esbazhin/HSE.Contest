@@ -35,8 +35,8 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
         [Column(name: "frameworkType")]
         public string FrameworkType { get; set; }
 
-        //[Column(name: "updateRulesFiles")]
-        //public bool UpdateRulesFiles { get; set; }
+        [Column(name: "plagiarismDetected")]
+        public bool PlagiarismDetected { get; set; }
 
 
         [Column(name: "compilationId")]

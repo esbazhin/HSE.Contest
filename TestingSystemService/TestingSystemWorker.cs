@@ -40,107 +40,114 @@ namespace TestingSystemService
 
         public async Task<TestingSystemResponse> CheckSolution(SolutionTestingRequest solutionRequest)
         {
-            var solution = _db.Solutions.Find(solutionRequest.SolutionId);
-
-            if (solution != null && solution.File != null)
+            try
             {
-                var taskTests = _db.TaskTests.Where(t => t.TaskId == solution.TaskId).ToArray();
+                var solution = _db.Solutions.Find(solutionRequest.SolutionId);
 
-                if (taskTests != null && taskTests.Length > 0)
+                if (solution != null && solution.File != null)
                 {
-                    var isAlive = await CheckIfAlive(_config.CompilerServicesOrchestrator);
+                    var taskTests = _db.TaskTests.Where(t => t.TaskId == solution.TaskId).ToArray();
 
-                    if (isAlive)
+                    if (taskTests != null && taskTests.Length > 0)
                     {
-                        //var dataBytes = await file.GetBytes();                        
-                        var codeStyleTask = taskTests.FirstOrDefault(t => t.TestType == "codeStyleTest");
+                        var isAlive = await CheckIfAlive(_config.CompilerServicesOrchestrator);
 
-                        var req = new TestRequest
+                        if (isAlive)
                         {
-                            SolutionId = solutionRequest.SolutionId,
-                            TestId = codeStyleTask is null ? -1 : codeStyleTask.Id
-                        };
+                            //var dataBytes = await file.GetBytes();                        
+                            var codeStyleTask = taskTests.FirstOrDefault(t => t.TestType == "codeStyleTest");
 
-                        string url = _config.CompilerServicesOrchestrator.GetFullTestLinkFrom(_config.TestingSystemWorker);
-                        using var httpClient = new HttpClient();
-                        using var form = JsonContent.Create(req);
-                        HttpResponseMessage response = await httpClient.PostAsync(url, form);
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-                        if (response.IsSuccessStatusCode)
-                        {
-                            TestResponse compResponse = JsonConvert.DeserializeObject<TestResponse>(apiResponse);
-
-                            if (compResponse.OK && compResponse.Result == ResultCode.OK)
+                            var req = new TestRequest
                             {
-                                var compResult = _db.CompilationResults.Find(solutionRequest.SolutionId);
+                                SolutionId = solutionRequest.SolutionId,
+                                TestId = codeStyleTask is null ? -1 : codeStyleTask.Id
+                            };
 
-                                if (compResult != null)
+                            string url = _config.CompilerServicesOrchestrator.GetFullTestLinkFrom(_config.TestingSystemWorker);
+                            using var httpClient = new HttpClient();
+                            using var form = JsonContent.Create(req);
+                            HttpResponseMessage response = await httpClient.PostAsync(url, form);
+                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            if (response.IsSuccessStatusCode)
+                            {
+                                TestResponse compResponse = JsonConvert.DeserializeObject<TestResponse>(apiResponse);
+
+                                if (compResponse.OK && compResponse.Result == ResultCode.OK)
                                 {
-                                    if (compResult.ResultCode != ResultCode.CE && compResult.File != null)
+                                    var compResult = _db.CompilationResults.Find(solutionRequest.SolutionId);
+
+                                    if (compResult != null)
                                     {
-                                        var testTasks = new List<Task<TestResponse>>();
-                                        foreach (var test in taskTests)
+                                        if (compResult.ResultCode != ResultCode.CE && compResult.File != null)
                                         {
-                                            if (_config.Tests.ContainsKey(test.TestType))
+                                            var testTasks = new List<Task<TestResponse>>();
+                                            foreach (var test in taskTests)
                                             {
-                                                testTasks.Add(StartTest(test.TestType, solutionRequest.SolutionId, test.Id));
+                                                if (_config.Tests.ContainsKey(test.TestType))
+                                                {
+                                                    testTasks.Add(StartTest(test.TestType, solutionRequest.SolutionId, test.Id));
+                                                }
+                                                else
+                                                {
+                                                    testTasks.Add(Task.Run(() => NoTestFound(test.TestType, solutionRequest.SolutionId, test.Id)));
+                                                }
                                             }
-                                            else
+                                            await Task.WhenAll(testTasks);
+
+                                            var responses = testTasks.Select(t => t.Result).ToArray();
+                                            var results = responses.Join(taskTests, i => i.TestId, o => o.Id, (i, o) => new { Result = i, Definition = o }).ToArray();
+
+                                            double totalScore = 0;
+                                            ResultCode totalResult = results.Select(r => r.Result.Result).Max();
+
+                                            foreach (var res in results)
                                             {
-                                                testTasks.Add(Task.Run(() => NoTestFound(test.TestType, solutionRequest.SolutionId, test.Id)));
+                                                if (res.Definition.Block && res.Result.Score == 0)
+                                                {
+                                                    totalScore = 0;
+
+                                                    break;
+                                                }
+                                                else
+                                                {
+                                                    totalScore += res.Result.Score * res.Definition.Weight;
+                                                }
                                             }
+
+                                            return WriteToDb(solution, totalResult, totalScore, "success", true, responses);
                                         }
-                                        await Task.WhenAll(testTasks);
-
-                                        var responses = testTasks.Select(t => t.Result).ToArray();
-                                        var results = responses.Join(taskTests, i => i.TestId, o => o.Id, (i, o) => new { Result = i, Definition = o }).ToArray();
-
-                                        double totalScore = 0;
-                                        ResultCode totalResult = results.Select(r => r.Result.Result).Max();
-
-                                        foreach (var res in results)
+                                        else
                                         {
-                                            if (res.Definition.Block && res.Result.Score == 0)
-                                            {
-                                                totalScore = 0;
-
-                                                break;
-                                            }
-                                            else
-                                            {
-                                                totalScore += res.Result.Score * res.Definition.Weight;
-                                            }
+                                            return WriteToDb(solution, compResult.ResultCode, 0, "compilation error!", true);
                                         }
-
-                                        return WriteToDb(solution, totalResult, totalScore, "success", true, responses);
                                     }
                                     else
                                     {
-                                        return WriteToDb(solution, compResult.ResultCode, 0, "compilation error!", true);
+                                        return WriteToDb(solution, compResponse.Result, 0, "can't find compilation! Inner message: " + compResponse.Message, false);
                                     }
                                 }
                                 else
                                 {
-                                    return WriteToDb(solution, compResponse.Result, 0, "can't find compilation! Inner message: " + compResponse.Message, false);
+                                    return WriteToDb(solution, compResponse.Result, 0, "something went wrong during compilation! Inner message: " + compResponse.Message, false);
                                 }
                             }
                             else
                             {
-                                return WriteToDb(solution, compResponse.Result, 0, "something went wrong during compilation! Inner message: " + compResponse.Message, false);
+                                return WriteToDb(solution, ResultCode.IE, 0, "bad response from compilation container: " + response.StatusCode, false);
                             }
                         }
-                        else
-                        {
-                            return WriteToDb(solution, ResultCode.IE, 0, "bad response from compilation container: " + response.StatusCode, false);
-                        }
+                    }
+                    else
+                    {
+                        return WriteToDb(solution, ResultCode.IE, 0, "Compiler Service Is Dead!", false);
                     }
                 }
-                else
-                {
-                    return WriteToDb(solution, ResultCode.IE, 0, "Compiler Service Is Dead!", false);
-                }
+                return WriteToDb(null, ResultCode.IE, 0, "Can't find solution!", false);
             }
-            return WriteToDb(null, ResultCode.IE, 0, "Can't find solution!", false);
+            catch
+            {
+                return new TestingSystemResponse();
+            }
         }
 
         async Task<bool> CheckIfAlive(ServiceConfig config)
