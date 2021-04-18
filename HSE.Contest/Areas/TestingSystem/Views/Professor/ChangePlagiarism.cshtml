@@ -1,0 +1,137 @@
+﻿@model HSE.Contest.ClassLibrary.DbClasses.TestingSystem.PlagiarismCheck
+@{
+    ViewData["Title"] = "Результаты плагиата";
+}
+
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Professor", action = "AllTasks", area = "TestingSystem" })
+}
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
+<h1>Результаты плагиата</h1>
+
+<div id="app"></div>
+
+@section Scripts{
+    
+<script>
+let plag = @Json.Serialize(Model);
+let isLoading = { "isLoading": false };
+let languages = [ {"title": "C#", "value": "csharp"}];
+new Vue({
+		el: '#app',
+		data: {
+			plag: plag,
+            isLoading: isLoading,
+            languages: languages
+		},
+		methods:{
+            send: function () {
+                var http = new XMLHttpRequest();
+                var url = './UpdatePlagiarism';
+                var data = 'json=' + encodeURIComponent(JSON.stringify(this.plag));                
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                var that = this;
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.readyState == 4 && http.status == 200) {
+                        if (http.responseText != 'error') {
+                            document.location.href = http.responseText;
+                        }
+                        else {
+                            that.$message.error('An error occured. Try again!');
+                        }
+                    }
+                }
+                http.send(data);
+			},
+            recheck: function () {
+                this.isLoading.isLoading = true;
+                var http = new XMLHttpRequest();
+                var url = './ReCheckPlagiarism';
+                var data = 'taskId=' + this.plag.taskId;
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                var that = this;
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.readyState == 4 && http.status == 200) {
+                        if (http.responseText != 'error') {
+                            document.location.href = http.responseText;
+                        }
+                        else {
+                            that.$message.error('An error occured. Try again!');
+                        }
+                    }
+                }
+                http.send(data);
+            },
+		},
+
+		template: `
+		<div>		
+		<a-spin :spinning="isLoading.isLoading">
+		<a-collapse :bordered="true" :activeKey="[1,2]">
+		<a-collapse-panel header="Результаты плагиата:" key="1">
+			<div v-if="plag.link === null">
+                Нет результатов
+            </div>
+            <div v-else>
+                <a :href="plag.link"> Результаты </a>
+            </div>
+		</a-collapse-panel>
+		<a-collapse-panel header="Настройки плагиата:" key="2">
+			<a-form layout="vertical">
+				<a-form-item label="Выполнять проверку:">
+					<a-switch block v-model="plag.settings.makeCheck"/>
+				</a-form-item>
+				<a-form-item label="Кол-во совпадений (параметр m):">
+					<a-input-number v-model="plag.settings.maxMatches" :min="1" :max="99999"/>
+				</a-form-item>
+				<a-form-item label="Максимальный процент плагиата:">
+					<a-input-number v-model="plag.settings.minPercent" :min="0" :max="1" :step="0.01"/>
+				</a-form-item>
+                <a-form-item label="Язык программирования:">
+					<a-select  v-model="plag.settings.language">
+			            <a-select-option
+				            v-for="(item, index) in languages"
+				            :key="index"
+				            :value="item.value">  {{item.title}}
+			            </a-select-option>
+		            </a-select>
+				</a-form-item>
+				<a-form-item>
+					<a-popconfirm
+						title="Sure to change settings?"
+						@@confirm="send"
+					>
+						<a-button key="changeSettings" type="primary">
+							Изменить настройки
+						</a-button>
+					</a-popconfirm>
+				</a-form-item>
+			</a-form>
+		</a-collapse-panel>		
+		</a-collapse>
+		<a-popconfirm
+			title="Sure to recheck?"
+			@@confirm="recheck"
+        >
+			<a-button block type="submit">Отправить на перепроверку</a-button>
+        </a-popconfirm>
+		</a-spin>
+	</div>
+		`,
+	});
+    </script>
+}

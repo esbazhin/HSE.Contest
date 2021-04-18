@@ -452,5 +452,53 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             return ass.GetTypes().Where(t => t.IsClass).Select((t, i) => new ClassDefinition(t, i)).ToList();
         }
+
+        //public async Task<IActionResult> ViewSolutions(int taskId)
+        //{
+        //    var allSolutions = _db.Solutions.Where(s => s.TaskId == taskId).ToList();
+
+
+
+        //    return View();
+        //}
+
+        public IActionResult ChangePlagiarism(int taskId)
+        {
+            var cur = _db.PlagiarismChecks.Find(taskId);
+
+            return View(cur);
+        }
+
+        public IActionResult UpdatePlagiarism(string json)
+        {
+            var plagJson = JsonConvert.DeserializeObject<PlagiarismCheck>(json);
+
+            var plag = _db.PlagiarismChecks.Find(plagJson.TaskId);
+
+            plag.Settings = plagJson.Settings;
+
+            _db.SaveChanges();
+
+            return Content("/TestingSystem/Professor/ChangePlagiarism?taskId=" + plagJson.TaskId);
+        }
+
+        public async Task<IActionResult> ReCheckPlagiarism(int taskId)
+        {
+            try
+            {
+                var msgQueue = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.FrontEnd);
+
+                var request = new PlagiarismCheckRequest
+                {
+                    TaskId = taskId,
+                };
+                await msgQueue.SendAsync(_config.MessageQueueInfo.PlagiarismQueueName, request);
+                return Content("/TestingSystem/Professor/ChangePlagiarism?taskId=" + taskId);
+            }
+            catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException e)
+            {
+                return Content("error");
+            }
+        }
     }
 }

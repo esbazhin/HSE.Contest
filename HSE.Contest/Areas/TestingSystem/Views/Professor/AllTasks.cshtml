@@ -33,6 +33,7 @@
                 <a-list itemLayout="horizontal" :dataSource="tasks">
                     <a-list-item slot="renderItem" slot-scope="item, index">
                             <a :href="'./ChangeTask?id=' + item.id" slot="actions">edit</a>
+                            <a :href="'./ChangePlagiarism?taskId=' + item.id" slot="actions">plagiarism</a>
                             <a-popconfirm slot="actions"
                                 title="Sure to delete?"
                                 @@confirm="redirect(item.id)"
