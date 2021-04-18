@@ -4,6 +4,8 @@ namespace HSE.Contest.Areas.TestingSystem.ViewModels
 {
     public class StudentTaskViewModel
     {
+        public string StudentId { get; set; }
+        public string StudentName { get; set; }
         public int TaskId { get; set; }
         public string TaskName { get; set; }
         public string Description { get; set; }

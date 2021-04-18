@@ -1,7 +1,12 @@
-﻿@model  string
+﻿@model  (string, string)
 @{
     ViewData["Title"] = "Message";
 }
 
-<h1>@Model</h1>
+<h1>@Model.Item1</h1>
+
+@if(Model.Item2 != null)
+{
+    <a href="@Model.Item2">Назад</a>
+}
 

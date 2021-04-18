@@ -1,0 +1,67 @@
+﻿@model IEnumerable<ResultsViewModel>
+
+@{
+    ViewData["Title"] = "Отправленные решения";
+}
+
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
+
+<h1>Отправленные решения</h1>
+<div id="app"></div>
+
+
+
+@section Scripts{
+    <script>
+        let results = @Html.Raw(Json.Serialize(Model));
+        new Vue({
+            el: '#app',
+            data: {
+                results: results,
+            },
+            methods: {
+                getValueStyle(res) {
+                    if (res === 'OK' || res === 'НЕТ') {
+                        return { color: '#3f8600' };
+                    }
+                    else {
+                        return { color: '#cf1322' };
+                    }
+                },
+            },
+            template: `
+                <div>
+                <a-list itemLayout="vertical" :dataSource="results">
+                    <a-list-item slot="renderItem" slot-scope="item, index">
+                            <a :href="'./ManageStudentSolutions?taskId=' + item.taskId + '&studentId=' + item.studentId" slot="actions">all solutions</a>   
+                            <a :href="'./EditSolution?id=' + item.solutionId" slot="actions">edit</a> 
+                            <a :href="'../Student/ViewSolutionReport?id=' + item.solutionId" slot="actions">report</a> 
+                        <a-list-item-meta>
+                            <label slot="title">{{item.studentFullName}}</label>
+                        </a-list-item-meta>
+
+                        <a-row>
+						    <a-col :span="8">
+							   <a-statistic title="Оценка" :value="item.score"/>
+						    </a-col>
+						    <a-col :span="8">
+							   <a-statistic title="Вердикт" :value="item.result" :value-style="getValueStyle(item.result)"/>
+						    </a-col>
+						    <a-col :span="8">
+							    <a-statistic title="Плагиат" :value="item.result ? 'ДА' : 'НЕТ'" :value-style="getValueStyle(item.result)"/>
+						    </a-col>						    
+					    </a-row>
+
+                    </a-list-item>
+                </a-list>               
+            </div>
+                `,
+        });
+    </script>
+}

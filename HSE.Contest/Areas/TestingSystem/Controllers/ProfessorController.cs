@@ -452,16 +452,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             return ass.GetTypes().Where(t => t.IsClass).Select((t, i) => new ClassDefinition(t, i)).ToList();
         }
-
-        //public async Task<IActionResult> ViewSolutions(int taskId)
-        //{
-        //    var allSolutions = _db.Solutions.Where(s => s.TaskId == taskId).ToList();
-
-
-
-        //    return View();
-        //}
-
+       
         public IActionResult ChangePlagiarism(int taskId)
         {
             var cur = _db.PlagiarismChecks.Find(taskId);
@@ -499,6 +490,51 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             {
                 return Content("error");
             }
+        }
+
+        public IActionResult ManageSolutions(int taskId)
+        {
+            var allResults = _db.StudentResults.Where(s => s.TaskId == taskId).ToList();
+            var allResultsViews = allResults.Select(r => new ResultsViewModel(r)).ToList();
+
+            return View(allResultsViews);
+        }
+
+        public IActionResult ManageStudentSolutions(int taskId, string studentId)
+        {
+            var res = GetStudentTaskView(taskId, studentId);
+
+            return View(res);
+        }
+
+        public async Task SSE(string ids, int taskId, string studentId)
+        {
+            await SSEMethod(ids, taskId, studentId);
+        }
+
+        public IActionResult EditSolution(int id)
+        {
+            var sol = _db.Solutions.Find(id);
+
+            return View((id, sol.Score));
+        }
+
+        public IActionResult UpdateSolutionMark(int id, double score)
+        {
+            var sol = _db.Solutions.Find(id);
+            sol.Score = score;
+
+            //проверяем результат студента, если этот лучше - обновляем
+            var studentResult = _db.StudentResults.Find(sol.StudentId, sol.TaskId);
+
+            if(sol.Score >= studentResult.Solution.Score)
+            {
+                studentResult.SolutionId = id;
+            }
+
+            _db.SaveChanges();
+
+            return Redirect("EditSolution?id=" + id);
         }
     }
 }

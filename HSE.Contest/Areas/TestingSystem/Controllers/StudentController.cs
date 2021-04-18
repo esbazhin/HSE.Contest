@@ -26,9 +26,12 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
     public class StudentController : TestingSystemController
     {
         private readonly string curId;
+        private readonly bool isProff;
         public StudentController(UserManager<User> userManager, HSEContestDbContext db, TestingSystemConfig config, IHttpContextAccessor httpContextAccessor) : base(db, config)
         {
-            curId =  userManager.GetUserId(httpContextAccessor.HttpContext.User);
+            curId = userManager.GetUserId(httpContextAccessor.HttpContext.User);
+            var curUser = userManager.GetUserAsync(httpContextAccessor.HttpContext.User).Result;
+            isProff = userManager.IsInRoleAsync(curUser, "professor").Result;
         }
 
         public IActionResult Index()
@@ -51,7 +54,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public IActionResult SendStudentSolution(int id)
         {
-            var res = GetStudentTaskView(id);
+            var res = GetStudentTaskView(id, curId);
 
             if (res is null)
             {
@@ -67,76 +70,11 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             //return Content(JsonConvert.SerializeObject(res, serializerSettings));
 
             return View(res);
-        }
+        }       
 
-        StudentTaskViewModel GetStudentTaskView(int taskId)
-        {
-            var t = _db.StudentTasks.Find(taskId);
+       
 
-            if (t is null)
-            {
-                return null;
-            }
-
-            var solutions = _db.Solutions.Where(s => s.StudentId == curId && s.TaskId == taskId).ToArray();
-            var solutionsViewModels = solutions.Select(s =>
-            new SolutionViewModel
-            {
-                Id = s.Id,
-                TotalScore = s.Score,
-                Result = s.ResultCode.ToString(),
-                Time = s.Time,
-            }).OrderByDescending(s => s.Time).ToArray();
-
-
-            var res = new StudentTaskViewModel
-            {
-                TaskId = t.Id,
-                TaskName = t.Name,
-                Description = t.TaskText,
-                Solutions = solutionsViewModels,
-                Deadline = t.To,
-                NumberOfAttempts = t.NumberOfAttempts,
-                CanSend = CanSend(t, solutions),
-                Result = "Нет решений",
-                FrameworkTypes = _config.CompilerImages.Keys.ToArray()
-            };
-
-            var studentResult = _db.StudentResults.Find(curId, taskId);
-
-            if (studentResult != null)
-            {               
-                res.TotalScore = studentResult.Solution.Score;
-                res.Result = studentResult.Solution.ResultCode.ToString();
-            }            
-
-            return res;          
-        }
-
-        bool CanSend(StudentTask task, Solution[] solutions = null)
-        {
-            bool canSend = false;
-
-            if (task.To > DateTime.Now)
-            {
-                if (solutions is null)
-                {
-                    solutions = _db.Solutions.Where(s => s.StudentId == curId && s.TaskId == task.Id).ToArray();
-                }
-
-                if (task.IsContest)
-                {
-                    canSend = solutions.Length < task.NumberOfAttempts;
-                }
-                else
-                {
-                    canSend = solutions.Length == 0;
-                }
-            }
-
-            return canSend;
-        }
-
+        [Authorize(Roles = "student, professor")]
         public IActionResult ViewSolutionReport(int id)
         {
             var s = _db.Solutions.Find(id);
@@ -148,7 +86,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
             var t = _db.StudentTasks.Find(s.TaskId);
            
-            if (CanSend(t))
+            if (!isProff && CanSend(t, curId))
             {
                 return Forbid();
             }
@@ -188,7 +126,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 return Json(response1);
             }            
 
-            if (!CanSend(task))
+            if (!CanSend(task, curId))
             {
                 var response2 = new
                 {
@@ -331,7 +269,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                     {
                         status = "connectionError",
                         msg = "Can't connect to RabbitMQ!",
-                        data = GetStudentTaskView(taskId)
+                        data = GetStudentTaskView(taskId, curId)
                     };
                     return Json(response1);
                 }
@@ -339,7 +277,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 var response = new
                 {
                     status = "success",
-                    data = GetStudentTaskView(taskId)
+                    data = GetStudentTaskView(taskId, curId)
                 };
                 return Json(response);
             }
@@ -362,7 +300,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
                 if(s != null && s.ResultCode != ResultCode.NT)
                 {
-                    var res = GetStudentTaskView(taskId);
+                    var res = GetStudentTaskView(taskId, curId);
                     
                     //JsonSerializerSettings serializerSettings = new JsonSerializerSettings
                     //{
@@ -391,60 +329,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public async Task SSE(string ids, int taskId)
         {
-            int[] solIds = JsonConvert.DeserializeObject<int[]>(ids);
-            var response = Response;
-            response.Headers.Add("Content-Type", "text/event-stream");
-            response.Headers.Add("Cache-Control", "no-cache");
-            response.Headers.Add("Connection", "keep-alive");
-
-            var curState = new Dictionary<int, ResultCode>();
-
-            foreach (var id in solIds)
-            {
-                var s = _db.Solutions.Find(id);
-
-                if (s != null)
-                {
-                    curState[id] = s.ResultCode;
-                }
-            }
-
-            while (true)
-            {
-                bool update = false;
-                foreach (var id in solIds)
-                {                    
-                    var s = _db.Solutions.Find(id);
-                    _db.Entry(s).Reload();
-
-                    if (s != null && s.ResultCode != ResultCode.NT && curState[id] == ResultCode.NT)
-                    {
-                        curState[id] = s.ResultCode;
-                        update = true;
-                        break;
-                    }
-                }    
-                
-                if(update)
-                {
-                    solIds = solIds.Where(i => curState[i] == ResultCode.NT).ToArray();
-
-                    var res = GetStudentTaskView(taskId);
-
-                    JsonSerializerSettings serializerSettings = new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                        DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind
-                    };
-
-                    var data = JsonConvert.SerializeObject(res, serializerSettings);
-
-                    await response
-                        .WriteAsync("data:" + data + "\n\n");
-                }
-
-                await Task.Delay(5 * 1000);
-            }
+            await SSEMethod(ids, taskId, curId);
         }
 
         void CleanSolutionFiles(string dir)

@@ -128,14 +128,15 @@ namespace HSE.Contest.Areas.Administration.Controllers
             return MessageResult("Не найдена подходящая роль, обратитесь к администратору!");
         }
 
-        private IActionResult MessageResult(string v)
+        private IActionResult MessageResult(string v, string url = null)
         {
-            return View("Message", v);
+            return View("Message", (v, url));
         }
 
-        public IActionResult AccessDenied()
+        [AllowAnonymous]
+        public IActionResult AccessDenied(string ReturnUrl)
         {
-            return MessageResult("Доступ запрещён!");
+            return MessageResult("Доступ запрещён!", ReturnUrl);
         }
 
         public async Task<IActionResult> Logout()

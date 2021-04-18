@@ -1,0 +1,51 @@
+﻿@model (int, double)
+@{
+    ViewData["Title"] = "Изменить оценку";
+}
+
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Professor", action = "AllTasks", area = "TestingSystem" })
+}
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
+
+<h1>Изменить оценку</h1>
+
+<div id="app"></div>
+
+@section Scripts{
+    <script>
+let solId = @Json.Serialize(Model.Item1);
+let mark = @Json.Serialize(Model.Item2);
+
+new Vue({
+		el: '#app',
+		data: {
+            solId: solId,
+            mark: mark,
+		},
+        methods: {  
+            send: function () { document.location.href = './UpdateSolutionMark?id=' + this.solId + '&score=' + this.mark; }
+        },
+
+		template: `
+		<div>
+		<a-input-number v-model="mark" :min="0" :max="10" :step="0.01"/>
+
+		</a-collapse>
+		<a-popconfirm
+			title="Sure to change?"
+			@@confirm="send"
+        >
+			<a-button block type="submit">Изменить оценку</a-button>
+        </a-popconfirm>
+	</div>
+		`,
+	});
+    </script>
+}

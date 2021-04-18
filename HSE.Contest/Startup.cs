@@ -1,6 +1,7 @@
 using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.Administration;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using System;
 
 namespace HSE.Contest
 {
@@ -45,6 +47,19 @@ namespace HSE.Contest
                 opts.Password.RequireDigit = false; // требуются ли цифры
             })
                 .AddEntityFrameworkStores<HSEContestDbContext>();
+
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.AccessDeniedPath = "/Administration/Account/AccessDenied";
+                options.Cookie.Name = "YourAppCookieName";
+                options.Cookie.HttpOnly = true;
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+                options.LoginPath = "/Administration/Account/Login";
+                // ReturnUrlParameter requires 
+                //using Microsoft.AspNetCore.Authentication.Cookies;
+                options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
+                options.SlidingExpiration = true;
+            });
 
             services.AddMvc().AddMvcOptions(opt => opt.EnableEndpointRouting = false);
 

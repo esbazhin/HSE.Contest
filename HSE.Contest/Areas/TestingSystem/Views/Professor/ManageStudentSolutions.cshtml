@@ -1,0 +1,121 @@
+﻿@model StudentTaskViewModel
+@{
+    ViewData["Title"] = "Просмотр решений студента";
+}
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Student", action = "AllTasks", area = "TestingSystem" })
+}
+
+<div id="app"></div>
+
+@section Scripts{
+    <script>
+const sol = {"data": @Html.Raw(Json.Serialize(Model))};
+
+const ids = sol.data.solutions.filter(s => s.result == 'NT').map(s => s.id);
+const source = new EventSource('./SSE?taskId=' + sol.data.taskId + '&studentId=' + sol.data.studentId + '&ids=' + JSON.stringify(ids));
+
+source.onmessage = function (event) {
+	console.log('onmessage');
+	sol.data = JSON.parse(event.data);
+};
+
+source.onopen = function (event) {
+    console.log('onopen');
+};
+
+source.onerror = function (event) {
+    console.log('onerror');
+}
+
+new Vue({
+	el: '#app',
+	data: {
+		sol: sol,
+		eventSource: source,
+		columns: [
+			{ title: 'Время', width: 100, key: 'time', scopedSlots: { customRender: 'time' }},
+            { title: 'Оценка', width: 100, key: 'totalScore', scopedSlots: { customRender: 'totalScore' } },
+			{ title: 'Вердикт', width: 100, key: 'result', scopedSlots: { customRender: 'results' }},
+			{ title: 'Отчёт', key: 'report', width: 100, scopedSlots: { customRender: 'report' } },
+            { title: 'Изменить оценку', key: 'edit', width: 100, scopedSlots: { customRender: 'edit' } },
+		]
+	},
+	methods: {				
+        getValueStyle(res) {
+            if (res == 'OK') {
+                return { color: '#3f8600' };
+            }
+            else {
+                return { color: '#cf1322' };
+            }
+        },
+		prettyPrintTime(timeStr) {
+			return moment(timeStr).format("dddd, MMMM Do YYYY, h:mm:ss a");
+		}
+	},
+
+	template: `
+		<div>
+		<a-page-header
+			style="border: 1px solid rgb(235, 237, 240)"
+			:title="'Решения задачи ' + sol.data.taskName + ' студента ' + sol.data.studentName"
+			@@back="() => $router.go(-1)"
+		>
+			<template slot="extra">
+				
+			</template>
+
+		<a-descriptions size="small" :column="3">
+			<a-descriptions-item>
+				<a-statistic title="Итоговая оценка" :value="sol.data.totalScore"/>
+			</a-descriptions-item>
+			<a-descriptions-item>
+				<a-statistic title="Итоговый вердикт" :value="sol.data.result" :value-style="getValueStyle(sol.data.result)"/>
+			</a-descriptions-item>
+			<a-descriptions-item>
+				<a-statistic title="Попытки" :value="sol.data.solutions.length">
+					<template #suffix>
+						<span> / {{sol.data.numberOfAttempts}}</span>
+					</template>
+				</a-statistic>
+			</a-descriptions-item>
+		</a-descriptions>
+		</a-page-header>
+		<a-card title="Условие задачи" style="white-space: pre-line">
+            {{sol.data.description}}
+        </a-card>
+		<a-card title="Отправленные решения">
+            <a-table :columns="columns" :data-source="sol.data.solutions" :scroll="{ x: 1500, y: 300 }" size="small">
+				<span slot="time" slot-scope="item">
+					{{prettyPrintTime(item.time)}}
+				</span>
+				<span slot="results" slot-scope="item">
+					<div v-if="item.result == 'NT'">
+						<a-spin tip="Тестируется..."/>
+					</div>
+					<div v-else>
+						<a-tag
+							:color="item.result === 'OK' ? 'green' : 'volcano'"
+						>
+							{{item.result}}
+						</a-tag>
+					</div>
+				</span>
+				<span slot="totalScore" slot-scope="item">
+					<div v-if="item.result == 'NT'">
+						<a-spin tip="Тестируется..."/>
+					</div>
+					<div v-else>
+						{{item.totalScore}}
+					</div>
+				</span>
+				<a :href="'../Student/ViewSolutionReport?id='+item.id" slot="report" slot-scope="item"><a-button type="dashed">Отчёт</a-button></a>
+				<a :href="'./EditSolution?id='+item.id" slot="edit" slot-scope="item"><a-button type="dashed">Изменить оценку</a-button></a>
+			</a-table>
+        </a-card>
+	</div>
+		`
+});
+    </script>
+}

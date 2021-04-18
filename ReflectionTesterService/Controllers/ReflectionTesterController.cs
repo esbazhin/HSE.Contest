@@ -119,7 +119,7 @@ namespace ReflectionTesterService.Controllers
                         Commentary = resp.Commentary,
                         ResultCode = resp.Result,
                         Score = resp.Score,
-                        TestData = JsonConvert.SerializeObject(resp.Results)
+                        TestData = JsonConvert.SerializeObject(resp)
                     };
 
                     return WriteToDb(result);
