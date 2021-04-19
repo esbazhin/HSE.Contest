@@ -409,7 +409,7 @@ namespace NetFrameworkCompilerService.Controllers
                         {
                             File = dataBytes,
                             OK = true,
-                            Message = "succes"
+                            Message = "success"
                         };
 
                         return result;

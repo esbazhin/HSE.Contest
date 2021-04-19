@@ -84,7 +84,7 @@ namespace CompilerServicesOrchestrator.Controllers
                     ExposedPorts = new Dictionary<string, EmptyStruct>
                 {
                     {
-                        "80/tcp", default
+                        "80/tcp",  default(EmptyStruct)
                     }
                 },
                     HostConfig = new HostConfig
@@ -95,6 +95,8 @@ namespace CompilerServicesOrchestrator.Controllers
                 });
 
                 var id = createRes.ID;
+
+                await Task.Delay(3000);
 
                 var startRes = await client.Containers.StartContainerAsync(id, null);
                 if (startRes)
@@ -224,7 +226,7 @@ namespace CompilerServicesOrchestrator.Controllers
                     ExposedPorts = new Dictionary<string, EmptyStruct>
                 {
                     {
-                        "80/tcp", default
+                        "80/tcp",  default(EmptyStruct)
                     }
                 },
                     HostConfig = new HostConfig
@@ -235,7 +237,9 @@ namespace CompilerServicesOrchestrator.Controllers
                 });
 
                 var id = createRes.ID;
-               
+
+                await Task.Delay(3000);
+
                 var startRes = await client.Containers.StartContainerAsync(id, null);
                 if (startRes)
                 {

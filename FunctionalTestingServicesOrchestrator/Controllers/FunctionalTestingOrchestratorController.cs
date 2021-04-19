@@ -69,7 +69,7 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
                     ExposedPorts = new Dictionary<string, EmptyStruct>
                 {
                     {
-                        "80/tcp", default(EmptyStruct)
+                        "80/tcp",  default(EmptyStruct)
                     }
                 },
                     HostConfig = new HostConfig
@@ -81,6 +81,8 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
                 });
 
                 var id = createRes.ID;
+
+                await Task.Delay(3000);
 
                 var startRes = await client.Containers.StartContainerAsync(id, null);
                 if (startRes)

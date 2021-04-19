@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   testingsystemservice:
-    image: testingsystemservice
+    image: ${DOCKER_REGISTRY-}testingsystemservice
     restart: always
     build:
       context: .
@@ -12,7 +12,7 @@ services:
 
 
   compilerservicesorchestrator:
-    image: compilerservicesorchestrator
+    image: ${DOCKER_REGISTRY-}compilerservicesorchestrator
     restart: always
     build:
       context: .
@@ -27,7 +27,7 @@ services:
 
 
   reflectiontesterservice:
-    image: reflectiontesterservice
+    image: ${DOCKER_REGISTRY-}reflectiontesterservice
     restart: always
     build:
       context: .
@@ -39,7 +39,7 @@ services:
 
 
   functionaltestingservicesorchestrator:
-    image: functionaltestingservicesorchestrator
+    image: ${DOCKER_REGISTRY-}functionaltestingservicesorchestrator
     restart: always
     build:
       context: .
@@ -53,7 +53,7 @@ services:
         target: \\.\pipe\docker_engine
 
   codestyletesterservice:
-    image: codestyletesterservice
+    image: ${DOCKER_REGISTRY-}codestyletesterservice
     restart: always
     build:
       context: .
@@ -64,7 +64,7 @@ services:
       - c:\config:c:\config:ro
 
   hse.contest:
-    image: hsecontest
+    image: ${DOCKER_REGISTRY-}hsecontest
     restart: always
     build:
       context: .
@@ -75,7 +75,7 @@ services:
       - c:\config:c:\config:ro
 
   plagiarismcheckerworkerservice:
-    image: plagiarismcheckerworkerservice
+    image: ${DOCKER_REGISTRY-}plagiarismcheckerworkerservice
     restart: always
     build:
       context: .

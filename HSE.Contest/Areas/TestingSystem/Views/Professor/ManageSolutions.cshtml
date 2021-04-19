@@ -54,7 +54,7 @@
 							   <a-statistic title="Вердикт" :value="item.result" :value-style="getValueStyle(item.result)"/>
 						    </a-col>
 						    <a-col :span="8">
-							    <a-statistic title="Плагиат" :value="item.result ? 'ДА' : 'НЕТ'" :value-style="getValueStyle(item.result)"/>
+							    <a-statistic title="Плагиат" :value="item.plagiarismDetected ? 'ДА' : 'НЕТ'" :value-style="getValueStyle(item.plagiarismDetected ? 'ДА' : 'НЕТ')"/>
 						    </a-col>						    
 					    </a-row>
 

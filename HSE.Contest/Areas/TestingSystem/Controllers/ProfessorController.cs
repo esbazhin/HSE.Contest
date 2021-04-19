@@ -256,7 +256,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
                 _db.Add(plagCheck);
                 _db.SaveChanges();
-                
+
                 try
                 {
                     var msgQueue = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.FrontEnd);
@@ -343,29 +343,38 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                             if (pathToDll == null)
                             {
                                 pathToDll = FindAssemblyFile(dir, ".exe");
-                                if (pathToDll == null)
-                                {
-                                    var result = ConvertProject(pathToDll);
+                            }
 
-                                    var response1 = new
-                                    {
-                                        status = "success",
-                                        data = result
-                                    };
+                            List<ClassDefinition> result = null;
+                            if (pathToDll != null)
+                            {
+                                result = ConvertProject(pathToDll);
 
-                                    return Json(response1);
-                                }
+
                             }
 
                             dir.Delete(true);
 
-                            var response2 = new
+                            if (result != null)
                             {
-                                status = "error",
-                                data = "No dll or exe file found!"
-                            };
+                                var response1 = new
+                                {
+                                    status = "success",
+                                    data = result
+                                };
 
-                            return Json(response2);
+                                return Json(response1);
+                            }
+                            else
+                            {
+                                var response2 = new
+                                {
+                                    status = "error",
+                                    data = "No dll or exe file found!"
+                                };
+
+                                return Json(response2);
+                            }
                         }
 
                         var response3 = new
@@ -452,7 +461,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             return ass.GetTypes().Where(t => t.IsClass).Select((t, i) => new ClassDefinition(t, i)).ToList();
         }
-       
+
         public IActionResult ChangePlagiarism(int taskId)
         {
             var cur = _db.PlagiarismChecks.Find(taskId);
@@ -527,7 +536,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             //проверяем результат студента, если этот лучше - обновляем
             var studentResult = _db.StudentResults.Find(sol.StudentId, sol.TaskId);
 
-            if(sol.Score >= studentResult.Solution.Score)
+            if (sol.Score >= studentResult.Solution.Score)
             {
                 studentResult.SolutionId = id;
             }

@@ -10,6 +10,7 @@ EXPOSE 80
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /src
 COPY ["HSE.Contest/HSE.Contest.csproj", "HSE.Contest/"]
+COPY ["HSE.Contest.ClassLibrary/HSE.Contest.ClassLibrary.csproj", "HSE.Contest.ClassLibrary/"]
 RUN dotnet restore "HSE.Contest/HSE.Contest.csproj"
 COPY . .
 WORKDIR "/src/HSE.Contest"

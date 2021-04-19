@@ -4,3 +4,5 @@ docker image build -f FunctionalTestingOrchestrator/Dockerfile -t forchest:rel .
 
 docker image build -f NetCoreCompilerService/Dockerfile -t netcorecompiler:rel ./
 docker image build -f NetFrameworkCompilerService/Dockerfile -t netfrcompiler:rel ./
+
+docker image build -f CompilerServicesOrchestrator/Dockerfile -t netfrcompiler:rel ./
