@@ -78,16 +78,16 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
                         //Memory = 2097152
                     },
                     Env = new List<string> { "db_connection=" + _config.DatabaseInfo.GetConnectionStringFrom(null) }
-                });
+                }).ConfigureAwait(false);
 
                 var id = createRes.ID;
 
-                await Task.Delay(3000);
+                //await Task.Delay(3000);
 
-                var startRes = await client.Containers.StartContainerAsync(id, null);
+                var startRes = await client.Containers.StartContainerAsync(id, null).ConfigureAwait(false);
                 if (startRes)
                 {
-                    var inspectRes = await client.Containers.InspectContainerAsync(id);
+                    var inspectRes = await client.Containers.InspectContainerAsync(id).ConfigureAwait(false);
 
                     if (inspectRes.State.Running)
                     {
@@ -97,9 +97,9 @@ namespace FunctionalTestingServicesOrchestrator.Controllers
 
                         var result = await StartTesting(port, imageConfig.TestActionLink, request);
 
-                        await client.Containers.KillContainerAsync(id, new ContainerKillParameters());
+                        await client.Containers.KillContainerAsync(id, new ContainerKillParameters()).ConfigureAwait(false);
 
-                        await client.Containers.RemoveContainerAsync(id, new ContainerRemoveParameters());
+                        await client.Containers.RemoveContainerAsync(id, new ContainerRemoveParameters()).ConfigureAwait(false);
 
                         return result;
                     }

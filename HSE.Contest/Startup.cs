@@ -38,7 +38,8 @@ namespace HSE.Contest
                 options.UseNpgsql(config.DatabaseInfo.GetConnectionStringFrom(config.FrontEnd));
             });
 
-            services.AddIdentity<User, IdentityRole>(opts => {
+            services.AddIdentity<User, IdentityRole>(opts =>
+            {
                 opts.User.RequireUniqueEmail = true;
                 opts.Password.RequiredLength = 5;   // минимальная длина
                 opts.Password.RequireNonAlphanumeric = false;   // требуются ли не алфавитно-цифровые символы
@@ -51,7 +52,6 @@ namespace HSE.Contest
             services.ConfigureApplicationCookie(options =>
             {
                 options.AccessDeniedPath = "/Administration/Account/AccessDenied";
-                options.Cookie.Name = "YourAppCookieName";
                 options.Cookie.HttpOnly = true;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
                 options.LoginPath = "/Administration/Account/Login";

@@ -26,7 +26,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses
         public HSEContestDbContext(DbContextOptions<HSEContestDbContext> options)
             : base(options)
         {
-            Database.EnsureCreated();
+            //Database.EnsureCreated();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
