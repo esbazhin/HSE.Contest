@@ -315,9 +315,13 @@ namespace TestingSystemService
 
                 _db.StudentResults.Add(newResult);
             }
-            else if((studentResult.Solution.Score < solution.Score) || (studentResult.Solution.Score == solution.Score && studentResult.Solution.Time <= solution.Time))
+            else
             {
-                studentResult.SolutionId = solution.Id;
+                var prevSol = _db.Solutions.Find(studentResult.SolutionId);
+                if ((prevSol.Score < solution.Score) || (prevSol.Score == solution.Score && prevSol.Time <= solution.Time))
+                {
+                    studentResult.SolutionId = solution.Id;
+                }
             }
 
             _db.SaveChanges();

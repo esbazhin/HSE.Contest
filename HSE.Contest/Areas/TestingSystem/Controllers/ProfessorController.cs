@@ -536,7 +536,9 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             //проверяем результат студента, если этот лучше - обновляем
             var studentResult = _db.StudentResults.Find(sol.StudentId, sol.TaskId);
 
-            if (sol.Score >= studentResult.Solution.Score)
+            var prevSol = _db.Solutions.Find(studentResult.SolutionId);
+
+            if (sol.Score >= prevSol.Score)
             {
                 studentResult.SolutionId = id;
             }
