@@ -5,7 +5,6 @@ using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
 using HSE.Contest.ClassLibrary.TestsClasses.FunctionalTest;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -98,7 +97,7 @@ namespace NetCoreFunctionalTesterService.Controllers
                             ResultCode = ResultCode.RE,
                         };
 
-                        return WriteToDb(result);
+                        return DbWriter.WriteToDb(_db, result, request.ReCheck);
                     }
 
                     var resp = await TestProject(pathToDll, request.TestId);
@@ -116,7 +115,7 @@ namespace NetCoreFunctionalTesterService.Controllers
                         TestData = JsonConvert.SerializeObject(resp)
                     };
 
-                    return WriteToDb(result);
+                     return DbWriter.WriteToDb(_db, result, request.ReCheck);
                 }
             }
             catch (Exception e)
@@ -129,47 +128,9 @@ namespace NetCoreFunctionalTesterService.Controllers
                     TestId = request.TestId,
                 };
             }
-        }
+        }      
 
-        TestResponse WriteToDb(TestingResult res)
-        {
-            var x = _db.TestingResults.Add(res);
-            var beforeState = x.State;
-            int r = _db.SaveChanges();
-            var afterState = x.State;
-
-            bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
-
-            TestResponse response;
-
-            if (ok)
-            {
-                response = new TestResponse
-                {
-                    OK = true,
-                    Message = "success",
-                    Result = res.ResultCode,
-                    Score = res.Score,
-                    TestResultId = res.Id,
-                    TestId = res.TestId,
-                };
-            }
-            else
-            {
-                response = new TestResponse
-                {
-                    OK = false,
-                    Message = "can't write result to db",
-                    Result = ResultCode.IE,
-                    Score = res.Score,
-                    TestId = res.TestId,
-                };
-            }
-
-            return response;
-        }
-
-        string FindDllFile(DirectoryInfo dir)
+        protected virtual string FindDllFile(DirectoryInfo dir)
         {
             var f = dir.GetFiles().FirstOrDefault(f => f.Name.EndsWith(".dll"));
             if (f == null)
@@ -204,7 +165,7 @@ namespace NetCoreFunctionalTesterService.Controllers
             return new FunctionalTestResult { Results = results };
         }
 
-        (string, string, ResultCode) SingleTest(string test, string pathToDll, int tl)
+        protected virtual (string, string, ResultCode) SingleTest(string test, string pathToDll, int tl)
         {
             try
             {

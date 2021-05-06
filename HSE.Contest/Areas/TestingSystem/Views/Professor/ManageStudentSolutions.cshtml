@@ -38,7 +38,8 @@ new Vue({
             { title: 'Оценка', width: 100, key: 'totalScore', scopedSlots: { customRender: 'totalScore' } },
 			{ title: 'Вердикт', width: 100, key: 'result', scopedSlots: { customRender: 'results' }},
 			{ title: 'Отчёт', key: 'report', width: 100, scopedSlots: { customRender: 'report' } },
-            { title: 'Изменить оценку', key: 'edit', width: 100, scopedSlots: { customRender: 'edit' } },
+			{ title: 'Изменить оценку', key: 'edit', width: 100, scopedSlots: { customRender: 'edit' } },
+            { title: 'Отправить на перепроверку', key: 'recheck', width: 100, scopedSlots: { customRender: 'recheck' } },
 		]
 	},
 	methods: {				
@@ -52,7 +53,29 @@ new Vue({
         },
 		prettyPrintTime(timeStr) {
 			return moment(timeStr).format("dddd, MMMM Do YYYY, h:mm:ss a");
-		}
+        },
+        recheck(id) {
+            var http = new XMLHttpRequest();
+            var url = './ReCheckSolution';
+            var data = 'id=' + encodeURIComponent(id);
+            http.open('POST', url, true);
+
+            //Send the proper header information along with the request
+            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+            var that = this;
+            http.onreadystatechange = function () {//Call a function when the state changes.
+                if (http.readyState == 4 && http.status == 200) {
+					if (http.responseText != 'error') {
+						document.location.href = './ManageStudentSolutions?taskId=' + that.sol.data.taskId + '&studentId=' + that.sol.data.studentId;
+                    }
+                    else {
+                        that.$message.error('An error occured. Try again!');
+                    }
+                }
+            }
+            http.send(data);
+        }
 	},
 
 	template: `
@@ -112,6 +135,12 @@ new Vue({
 				</span>
 				<a :href="'../Student/ViewSolutionReport?id='+item.id" slot="report" slot-scope="item"><a-button type="dashed">Отчёт</a-button></a>
 				<a :href="'./EditSolution?id='+item.id" slot="edit" slot-scope="item"><a-button type="dashed">Изменить оценку</a-button></a>
+				<a-popconfirm slot="recheck" slot-scope="item"
+                                title="Sure to recheck?"
+                                @@confirm="recheck(item.id)"
+                                >
+					<a-button type="dashed">Отправить на перепроверку</a-button>
+				</a-popconfirm>
 			</a-table>
         </a-card>
 	</div>

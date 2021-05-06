@@ -5,7 +5,6 @@ using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
 using HSE.Contest.ClassLibrary.TestsClasses.FunctionalTest;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -18,7 +17,7 @@ namespace NetFrameworkFunctionalTesterService.Controllers
 {
     [Route("[controller]/[action]")]
     [ApiController]
-    public class FunctionalTesterController : ControllerBase
+    public class FunctionalTesterController
     {
         private readonly HSEContestDbContext _db;
 
@@ -94,11 +93,11 @@ namespace NetFrameworkFunctionalTesterService.Controllers
                         {
                             SolutionId = solution.Id,
                             TestId = request.TestId,
-                            Commentary = "No exe file found!",
+                            Commentary = "No dll file found!",
                             ResultCode = ResultCode.RE,
                         };
 
-                        return WriteToDb(result);
+                        return DbWriter.WriteToDb(_db, result, request.ReCheck);
                     }
 
                     var resp = await TestProject(pathToDll, request.TestId);
@@ -116,7 +115,7 @@ namespace NetFrameworkFunctionalTesterService.Controllers
                         TestData = JsonConvert.SerializeObject(resp)
                     };
 
-                    return WriteToDb(result);
+                    return DbWriter.WriteToDb(_db, result, request.ReCheck);
                 }
             }
             catch (Exception e)
@@ -130,45 +129,21 @@ namespace NetFrameworkFunctionalTesterService.Controllers
                 };
             }
         }
-
-        TestResponse WriteToDb(TestingResult res)
+        async Task<FunctionalTestResult> TestProject(string pathToDll, int testId)
         {
-            var x = _db.TestingResults.Add(res);
-            var beforeState = x.State;
-            int r = _db.SaveChanges();
-            var afterState = x.State;
+            var task = _db.TaskTests.Find(testId);
+            var data = JsonConvert.DeserializeObject<FunctionalTestData>(task.TestData);
 
-            bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
-
-            TestResponse response;
-
-            if (ok)
+            var tasks = data.FunctionalTests.Select(t => Task.Run(() =>
             {
-                response = new TestResponse
-                {
-                    OK = true,
-                    Message = "success",
-                    Result = res.ResultCode,
-                    Score = res.Score,
-                    TestResultId = res.Id,
-                    TestId = res.TestId,
-                };
-            }
-            else
-            {
-                response = new TestResponse
-                {
-                    OK = false,
-                    Message = "can't write result to db",
-                    Result = ResultCode.IE,
-                    Score = res.Score,
-                    TestId = res.TestId,
-                };
-            }
+                var result = SingleTest(t.Input, pathToDll, t.TimeLimit);
+                return new SingleFunctTestResult(t.Output.Replace("\r\n", "\n"), result.Item1.Replace("\r\n", "\n"), result.Item2, t.Name, t.Input, result.Item3);
+            }));
 
-            return response;
+            var results = await Task.WhenAll(tasks);
+
+            return new FunctionalTestResult { Results = results };
         }
-
         string FindExeFile(DirectoryInfo dir)
         {
             var f = dir.GetFiles().FirstOrDefault(f => f.Name.EndsWith(".exe"));
@@ -186,22 +161,6 @@ namespace NetFrameworkFunctionalTesterService.Controllers
                 return res;
             }
             return f.FullName;
-        }
-
-        async Task<FunctionalTestResult> TestProject(string pathToDll, int testId)
-        {
-            var task = _db.TaskTests.Find(testId);
-            var data = JsonConvert.DeserializeObject<FunctionalTestData>(task.TestData);
-
-            var tasks = data.FunctionalTests.Select(t => Task.Run(() =>
-            {
-                var result = SingleTest(t.Input, pathToDll, t.TimeLimit);
-                return new SingleFunctTestResult(t.Output.Replace("\r\n", "\n"), result.Item1.Replace("\r\n", "\n"), result.Item2, t.Name, t.Input, result.Item3);
-            }));
-
-            var results = await Task.WhenAll(tasks);
-
-            return new FunctionalTestResult { Results = results };
         }
 
         (string, string, ResultCode) SingleTest(string test, string pathToExe, int tl)

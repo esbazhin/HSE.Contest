@@ -4,5 +4,6 @@
     {
         public int SolutionId { get; set; }
         public int TestId { get; set; }
+        public bool ReCheck { get; set; }
     }
 }

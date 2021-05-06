@@ -20,7 +20,7 @@ namespace NetCoreCompilerService.Controllers
     [ApiController]
     public class CompilerController : ControllerBase
     {
-        private readonly string addFilesPath = "/home/NetCoreFiles";
+        protected readonly string addFilesPath = "/home/NetCoreFiles";
         private readonly string rulesetFileName = "rules.ruleset";
         private readonly string stylecopFileName = "stylecop.json";
 
@@ -94,7 +94,7 @@ namespace NetCoreCompilerService.Controllers
                             FileId = null,
                         };
 
-                        return WriteToDb(result, solution);
+                        return WriteToDb(result, solution, request.ReCheck);
                     }
 
                     string pathToComp = dirPath + "/build";
@@ -130,7 +130,7 @@ namespace NetCoreCompilerService.Controllers
                             DidUpdateRules = didUpdate,
                         };
 
-                        return WriteToDb(result, solution);
+                        return WriteToDb(result, solution, request.ReCheck);
                     }
                     else
                     {
@@ -152,7 +152,7 @@ namespace NetCoreCompilerService.Controllers
                             DidUpdateRules = didUpdate,
                         };
 
-                        return WriteToDb(result, solution);
+                        return WriteToDb(result, solution, request.ReCheck);
                     }
                 }
                 else
@@ -178,23 +178,46 @@ namespace NetCoreCompilerService.Controllers
             }
         }
 
-        TestResponse WriteToDb(CompilationResult res, Solution sol)
+        TestResponse WriteToDb(CompilationResult res, Solution sol, bool recheck)
         {
-            var x = _db.CompilationResults.Add(res);
-            var beforeState = x.State;
-            int r = _db.SaveChanges();
-            var afterState = x.State;
-
             bool ok = false;
-            if (beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1)
-            {
-                sol.CompilationId = res.SolutionId;
-                var x1 = _db.Solutions.Update(sol);
-                beforeState = x1.State;
-                r = _db.SaveChanges();
-                afterState = x1.State;
 
-                ok = beforeState == EntityState.Modified && afterState == EntityState.Unchanged && r == 1;
+            if (recheck)
+            {
+                var existing = _db.CompilationResults.Find(res.SolutionId);
+
+                if(existing != null)
+                {
+                    existing.DidUpdateRules = res.DidUpdateRules;
+                    existing.FileId = res.FileId;
+                    existing.ResultCode = res.ResultCode;
+                    existing.StError = res.StError;
+                    existing.StOutput = res.StOutput;
+
+                    _db.SaveChanges();
+
+                    ok = true;
+                }                
+            }
+            else
+            {
+                var x = _db.CompilationResults.Add(res);
+                var beforeState = x.State;
+                int r = _db.SaveChanges();
+                var afterState = x.State;
+
+
+                if (beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1)
+                {
+                    sol.CompilationId = res.SolutionId;
+                    var x1 = _db.Solutions.Update(sol);
+                    beforeState = x1.State;
+                    r = _db.SaveChanges();
+                    afterState = x1.State;
+
+                    ok = beforeState == EntityState.Modified && afterState == EntityState.Unchanged && r == 1;
+                }
+
             }
 
             TestResponse response;
@@ -253,47 +276,7 @@ namespace NetCoreCompilerService.Controllers
             return true;
         }
 
-        (string, string) Compile(string pathToProj, string pathToComp)
-        {
-            var projFolder = (new FileInfo(pathToProj)).Directory;
-            var addFilesFolder = new DirectoryInfo(addFilesPath);
-
-            CloneDirectory(addFilesFolder, projFolder);
-
-            ProcessStartInfo info = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardInput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-                Arguments = "build " + pathToProj + " -o " + pathToComp
-                //Arguments = "--version"
-                //UserName = userName,
-                //Password = pswrd
-            };
-            Process pr = new Process
-            {
-                StartInfo = info
-            };
-            pr.Start();
-
-            //StreamWriter sw = pr.StandardInput;
-            //foreach (string inp in input)
-            //    sw.WriteLine(inp);
-            //sw.Close();
-
-            string strOutput = pr.StandardOutput.ReadToEnd();
-            strOutput = strOutput.TrimEnd();
-            string err = pr.StandardError.ReadToEnd();
-            err = err.TrimEnd();
-            pr.WaitForExit();
-
-            return (strOutput, err);
-        }
-
-        void CloneDirectory(DirectoryInfo root, DirectoryInfo dest)
+        protected void CloneDirectory(DirectoryInfo root, DirectoryInfo dest)
         {
             foreach (var directory in root.GetDirectories())
             {
@@ -431,6 +414,46 @@ namespace NetCoreCompilerService.Controllers
                     Message = "Error occured: " + e.Message + (e.InnerException is null ? "" : " Inner: " + e.InnerException.Message),
                 };
             }
+        }
+
+        (string, string) Compile(string pathToProj, string pathToComp)
+        {
+            var projFolder = (new FileInfo(pathToProj)).Directory;
+            var addFilesFolder = new DirectoryInfo(addFilesPath);
+
+            CloneDirectory(addFilesFolder, projFolder);
+
+            ProcessStartInfo info = new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardInput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                Arguments = "build " + pathToProj + " -o " + pathToComp
+                //Arguments = "--version"
+                //UserName = userName,
+                //Password = pswrd
+            };
+            Process pr = new Process
+            {
+                StartInfo = info
+            };
+            pr.Start();
+
+            //StreamWriter sw = pr.StandardInput;
+            //foreach (string inp in input)
+            //    sw.WriteLine(inp);
+            //sw.Close();
+
+            string strOutput = pr.StandardOutput.ReadToEnd();
+            strOutput = strOutput.TrimEnd();
+            string err = pr.StandardError.ReadToEnd();
+            err = err.TrimEnd();
+            pr.WaitForExit();
+
+            return (strOutput, err);
         }
     }
 }

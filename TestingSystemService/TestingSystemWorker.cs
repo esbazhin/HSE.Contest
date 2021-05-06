@@ -60,7 +60,8 @@ namespace TestingSystemService
                             var req = new TestRequest
                             {
                                 SolutionId = solutionRequest.SolutionId,
-                                TestId = codeStyleTask is null ? -1 : codeStyleTask.Id
+                                TestId = codeStyleTask is null ? -1 : codeStyleTask.Id,
+                                ReCheck = solutionRequest.ReCheck,
                             };
 
                             string url = _config.CompilerServicesOrchestrator.GetFullTestLinkFrom(_config.TestingSystemWorker);
@@ -85,7 +86,7 @@ namespace TestingSystemService
                                             {
                                                 if (_config.Tests.ContainsKey(test.TestType))
                                                 {
-                                                    testTasks.Add(StartTest(test.TestType, solutionRequest.SolutionId, test.Id));
+                                                    testTasks.Add(StartTest(test.TestType, solutionRequest.SolutionId, test.Id, solutionRequest.ReCheck));
                                                 }
                                                 else
                                                 {
@@ -168,7 +169,7 @@ namespace TestingSystemService
             }
         }
 
-        async Task<TestResponse> StartTest(string testName, int solutionId, int testId)
+        async Task<TestResponse> StartTest(string testName, int solutionId, int testId, bool recheck)
         {
             var serviceConfig = _config.Tests[testName];
             var isAlive = await CheckIfAlive(serviceConfig);
@@ -179,6 +180,7 @@ namespace TestingSystemService
                 {
                     SolutionId = solutionId,
                     TestId = testId,
+                    ReCheck = recheck,
                 };
 
                 using var httpClient = new HttpClient();

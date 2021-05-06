@@ -547,5 +547,38 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
             return Redirect("EditSolution?id=" + id);
         }
+
+        public async Task<IActionResult> ReCheckSolution(int id)
+        {
+            var sol = _db.Solutions.Find(id);
+
+            if(sol is null)
+            {
+                return NotFound();
+            }
+
+            sol.ResultCode = ResultCode.NT;         
+
+            //запускаем тестирование посылая сообщение микросервису
+            try
+            {
+                var msgQueue = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.FrontEnd);
+
+                var request = new SolutionTestingRequest
+                {
+                    SolutionId = sol.Id,
+                    ReCheck = true,
+                };
+                await msgQueue.SendAsync(_config.MessageQueueInfo.TestingQueueName, request);
+            }
+            catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException e)
+            {               
+                return Content("error");
+            }
+
+            _db.SaveChanges();
+            
+            return Content("ok");
+        }
     }
 }

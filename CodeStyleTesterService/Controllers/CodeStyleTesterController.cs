@@ -5,7 +5,6 @@ using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.TestingSystem;
 using HSE.Contest.ClassLibrary.TestsClasses.CodeStyleTest;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -81,7 +80,7 @@ namespace CodeStyleTesterService.Controllers
                         TestData = JsonConvert.SerializeObject(resp)
                     };
 
-                    return WriteToDb(result);
+                    return DbWriter.WriteToDb(_db, result, request.ReCheck);
                 }
             }
             catch (Exception e)
@@ -94,45 +93,7 @@ namespace CodeStyleTesterService.Controllers
                     TestId = request.TestId,
                 };
             }
-        }
-
-        TestResponse WriteToDb(TestingResult res)
-        {
-            var x = _db.TestingResults.Add(res);
-            var beforeState = x.State;
-            int r = _db.SaveChanges();
-            var afterState = x.State;
-
-            bool ok = beforeState == EntityState.Added && afterState == EntityState.Unchanged && r == 1;
-
-            TestResponse response;
-
-            if (ok)
-            {
-                response = new TestResponse
-                {
-                    OK = true,
-                    Message = "success",
-                    Result = res.ResultCode,
-                    Score = res.Score,
-                    TestResultId = res.Id,
-                    TestId = res.TestId,
-                };
-            }
-            else
-            {
-                response = new TestResponse
-                {
-                    OK = false,
-                    Message = "can't write result to db",
-                    Result = ResultCode.IE,
-                    Score = res.Score,
-                    TestId = res.TestId,
-                };
-            }
-
-            return response;
-        }
+        }      
 
         private CodeStyleTestResult CheckCodeStyle(string stOutput)
         {
