@@ -2,6 +2,7 @@
 using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -194,7 +195,7 @@ namespace HSE.Contest.Areas.Administration.Controllers
         [HttpGet]
         public IActionResult ChangePassword(string id)
         {
-            return View("ChangePassword", id);
+            return View(id);
         }
 
         [HttpPost]
@@ -243,6 +244,51 @@ namespace HSE.Contest.Areas.Administration.Controllers
 
                 return Json(response1);
             }
+        }
+
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> ChangeMyPassword([FromServices] IHttpContextAccessor httpContextAccessor)
+        {
+            string id = _userManager.GetUserId(httpContextAccessor.HttpContext.User);
+
+            User user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            ChangePasswordViewModel model = new ChangePasswordViewModel { Id = user.Id, Email = user.Email, BackLink = httpContextAccessor.HttpContext.Request.Headers["Referer"].ToString() };
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ChangeMyPassword(ChangePasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                User user = await _userManager.FindByIdAsync(model.Id);
+                if (user != null)
+                {
+                    IdentityResult result =
+                        await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+                    if (result.Succeeded)
+                    {
+                        return Redirect(model.BackLink);
+                    }
+                    else
+                    {
+                        foreach (var error in result.Errors)
+                        {
+                            ModelState.AddModelError(string.Empty, error.Description);
+                        }
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Пользователь не найден");
+                }
+            }
+            return View(model);
         }
     }
 }

@@ -47,6 +47,7 @@
                 <a-menu-item key="tasks">@RenderSection("ManageTasks")</a-menu-item>
             }
 
+                <a-menu-item key="changePswrd" style="float: right"> @Html.RouteLink("Change Password", new { controller = "Users", action = "ChangeMyPassword", area = "Administration"})</a-menu-item>
                 <a-menu-item key="logout" style="float: right"> @Html.RouteLink("Logout", new { controller = "Account", action = "Logout", area = "Administration"})</a-menu-item>
             </a-menu>
 
