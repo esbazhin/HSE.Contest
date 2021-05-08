@@ -503,10 +503,28 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
         public IActionResult ManageSolutions(int taskId)
         {
+            var task = _db.StudentTasks.Find(taskId);
+
+            if(task is null)
+            {
+                return NotFound();
+            }
+
             var allResults = _db.StudentResults.Where(s => s.TaskId == taskId).ToList();
             var allResultsViews = allResults.Select(r => new ResultsViewModel(r)).ToList();
 
-            return View(allResultsViews);
+            var res = new StudentsResultsViewModel
+            {               
+                Results = allResultsViews,
+                TaskName = task.Name,
+                Type = task.IsContest ? "Контест" : "Контрольная работа",
+                GroupName = task.Group.Name,
+                NumberOfAttempts = task.NumberOfAttempts,
+                Deadline = task.To.ToString(),
+                TaskId = task.Id,
+            };
+
+            return View(res);
         }
 
         public IActionResult ManageStudentSolutions(int taskId, string studentId)
@@ -578,6 +596,41 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
 
             _db.SaveChanges();
             
+            return Content("ok");
+        }
+
+        public async Task<IActionResult> ReCheckTaskSolutions(int taskId)
+        {
+            var sols = _db.StudentResults.Where(r => r.TaskId == taskId).Select(r => r.Solution).ToList();
+
+            if (sols is null || sols.Count == 0)
+            {
+                return NotFound();
+            }           
+
+            //запускаем тестирование посылая сообщение микросервису
+            try
+            {
+                var msgQueue = RabbitHutch.CreateBus(_config.MessageQueueInfo, _config.FrontEnd);
+
+                foreach (var sol in sols)
+                {
+                    sol.ResultCode = ResultCode.NT;
+                    var request = new SolutionTestingRequest
+                    {
+                        SolutionId = sol.Id,
+                        ReCheck = true,
+                    };
+                    await msgQueue.SendAsync(_config.MessageQueueInfo.TestingQueueName, request);
+                }
+            }
+            catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException e)
+            {
+                return Content("error");
+            }
+
+            _db.SaveChanges();
+
             return Content("ok");
         }
     }

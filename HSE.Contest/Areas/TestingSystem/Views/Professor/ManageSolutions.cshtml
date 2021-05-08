@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ResultsViewModel>
+﻿@model StudentsResultsViewModel
 
 @{
     ViewData["Title"] = "Отправленные решения";
@@ -12,7 +12,6 @@
     @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
 }
 
-<h1>Отправленные решения</h1>
 <div id="app"></div>
 
 
@@ -55,11 +54,63 @@
                         }
                     }
                     http.send(data);
+                },
+                recheckAll(taskId) {
+                    var http = new XMLHttpRequest();
+                    var url = './ReCheckTaskSolutions';
+                    var data = 'taskId=' + encodeURIComponent(taskId);
+                    http.open('POST', url, true);
+
+                    //Send the proper header information along with the request
+                    http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                    var that = this;
+                    http.onreadystatechange = function () {//Call a function when the state changes.
+                        if (http.readyState == 4 && http.status == 200) {
+                            if (http.responseText != 'error') {
+                                that.$message.success('Solutions are send to recheck!');
+                            }
+                            else {
+                                that.$message.error('An error occured. Try again!');
+                            }
+                        }
+                    }
+                    http.send(data);
                 }
             },
             template: `
                 <div>
-                <a-list itemLayout="vertical" :dataSource="results">
+                <a-page-header
+			        style="border: 1px solid rgb(235, 237, 240)"
+			        :title="'Результаты по задаче ' + results.taskName"
+			        @@back="() => $router.go(-1)"
+			        >
+			        <template slot="extra">
+			            <a-popconfirm
+				            title="Sure to recheck all solutions?"
+				            @@confirm="recheckAll(results.taskId)"
+			            >
+				            <a-button key="1" type="primary">
+					            Отправить на перепроверку все решения
+				            </a-button>
+			            </a-popconfirm>
+			        </template>
+			        <a-descriptions size="small" :column="2">				        
+				        <a-descriptions-item label="Задано группе">
+					        {{results.groupName}}
+				        </a-descriptions-item>
+                        <a-descriptions-item label="Тип задачи">
+					        {{results.type}}
+				        </a-descriptions-item>
+                        <a-descriptions-item label="Кол-во попыток">
+					        {{results.numberOfAttempts}}
+				        </a-descriptions-item>
+                         <a-descriptions-item label="Доступен до">
+					        {{results.deadline}}
+				        </a-descriptions-item>                       
+			        </a-descriptions>
+			    </a-page-header>
+                <a-list itemLayout="vertical" :dataSource="results.results">
                     <a-list-item slot="renderItem" slot-scope="item, index">
                             <a :href="'./ManageStudentSolutions?taskId=' + item.taskId + '&studentId=' + item.studentId" slot="actions">all solutions</a>   
                             <a :href="'./EditSolution?id=' + item.solutionId" slot="actions">edit</a> 
