@@ -1,4 +1,5 @@
-﻿using HSE.Contest.Areas.Administration.ViewModels;
+﻿using HSE.Contest.Areas.Administration.Models;
+using HSE.Contest.Areas.Administration.ViewModels;
 using HSE.Contest.ClassLibrary.DbClasses;
 using HSE.Contest.ClassLibrary.DbClasses.Administration;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +11,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TinyCsvParser;
 
 namespace HSE.Contest.Areas.Administration.Controllers
 {
@@ -44,14 +46,14 @@ namespace HSE.Contest.Areas.Administration.Controllers
                 users.Add(new UserPreViewModel
                 {
                     Id = u.Id,
-                    FullName = u.FirstName + " " + u.LastName,
+                    FullName = u.LastName + " " + u.FirstName,
                     Email = u.Email,
                     Roles = string.Join(",", roles),
                     Groups = string.Join(",", u.Groups.Select(g => g.Group.Name)),
                 });
             }
 
-            return View(users);
+            return View(users.OrderBy(u => u.FullName).ToList());
         }
 
         public async Task<IActionResult> DeleteUser(string id)
@@ -289,6 +291,87 @@ namespace HSE.Contest.Areas.Administration.Controllers
                 }
             }
             return View(model);
+        }
+
+        public async Task<IActionResult> UploadUsers(IFormFile file)
+        {
+            if (file != null)
+            {
+                CsvParserOptions csvParserOptions = new CsvParserOptions(true, ';');
+                CsvUserMapping csvMapper = new CsvUserMapping();
+                CsvParser<CsvUser> csvParser = new CsvParser<CsvUser>(csvParserOptions, csvMapper);
+
+                var res = csvParser.ReadFromStream(file.OpenReadStream(), System.Text.Encoding.UTF8).ToList();
+
+                foreach(var userRecord in res)
+                {
+                    var groupName = userRecord.Result.GroupName;
+                    var group = _db.Groups.FirstOrDefault(g => g.Name == groupName);
+
+                    if(group is null)
+                    {
+                        group = new Group
+                        {
+                            Name = groupName,
+                        };
+
+                        _db.Groups.Add(group);
+                        _db.SaveChanges();
+                    }
+
+                    User newUser = new User
+                    {
+                        FirstName = userRecord.Result.FirstName,
+                        LastName = userRecord.Result.LastName,
+                        Email = userRecord.Result.Email,
+                        UserName = userRecord.Result.Email,       
+                    };
+
+                    var result = await _userManager.CreateAsync(newUser, userRecord.Result.Password);
+
+                    bool ok = result.Succeeded;
+                    
+                    if(ok)
+                    {
+                        var groups = new List<UserGroup> { new UserGroup { GroupId = group.Id, UserId = newUser.Id } };
+                        newUser.Groups = groups;
+
+                        _db.SaveChanges();
+
+                        var result1 = await _userManager.AddToRoleAsync(newUser, "student");
+                        ok = result1.Succeeded;
+                    }
+
+                    if(!ok)
+                    {
+                        var response1 = new
+                        {
+                            status = "error",
+                            data = string.Join(",", result.Errors.Select(e => e.Description))
+                        };
+
+                        return Json(response1);
+                    }
+                }
+
+                var response = new
+                {
+                    status = "success",
+                    data = ""
+                };
+
+                return Json(response);
+            }
+            else
+            {
+                var response1 = new
+                {
+                    status = "error",
+                    data = "Got no file!"
+                };
+
+                return Json(response1);
+            }
         }
     }
 }

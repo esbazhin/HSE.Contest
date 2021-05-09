@@ -511,7 +511,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             }
 
             var allResults = _db.StudentResults.Where(s => s.TaskId == taskId).ToList();
-            var allResultsViews = allResults.Select(r => new ResultsViewModel(r)).ToList();
+            var allResultsViews = allResults.Select(r => new ResultsViewModel(r)).OrderBy(r => r.StudentFullName).ToList();
 
             var res = new StudentsResultsViewModel
             {               

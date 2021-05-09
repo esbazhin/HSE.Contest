@@ -10,11 +10,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
+    <PackageReference Include="TinyCsvParser" Version="2.6.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Areas\Administration\Data\" />
-    <Folder Include="Areas\Administration\Models\" />
     <Folder Include="Areas\TestingSystem\Data\" />
     <Folder Include="Areas\TestingSystem\Models\" />
   </ItemGroup>

@@ -24,7 +24,7 @@ namespace HSE.Contest.Areas.TestingSystem.ViewModels
             var solution = res.Solution;
 
             StudentId = res.StudentId;
-            StudentFullName = student.FirstName + " " + student.LastName;
+            StudentFullName = student.LastName + " " + student.FirstName;
             TaskId = res.TaskId;
             SolutionId = res.SolutionId;
             Score = solution.Score;

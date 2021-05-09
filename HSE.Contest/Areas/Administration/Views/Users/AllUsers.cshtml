@@ -24,9 +24,46 @@
             el: '#app',
             data: {
                 users: users,
+                fileList: [],
             },
             methods: {
-                redirect: function (id) { document.location.href = './DeleteUser?id=' + id;}
+                redirect: function (id) { document.location.href = './DeleteUser?id=' + id; },
+                customRequest(options) {
+                    const data = new FormData();
+                    data.append('file', options.file);                   
+
+                    var http = new XMLHttpRequest();
+                    var url = './UploadUsers';
+
+                    http.open('POST', url, true);
+
+                    //Send the proper header information along with the request
+                    //http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                    var that = this;
+                    http.onreadystatechange = () => {//Call a function when the state changes.
+                        if (http.readyState == 4 && http.status == 200) {
+                            const response = JSON.parse(http.responseText);
+                            if (response.status && response.status == 'success') {
+                                document.location.href = './AllUsers'
+                            }
+                            else {
+                                options.onError(response, options.File);
+                            }
+                        }
+                    }
+                    http.send(data);
+                },
+                handleFileUpload(info) {
+                    if (info.file.status === 'done') {
+                        this.$message.success(`${info.file.name} file uploaded successfully`);
+                    } else if (info.file.status === 'error' && info.file.error.status === 'error') {
+                        this.$message.error(`${info.file.name} file upload failed. An error occured: ` + info.file.error.data);
+                        info.file.response = info.file.error.data;
+                    }
+                   
+                    this.fileList = [info.file];
+                },
             },
             template: `
                 <div>
@@ -45,11 +82,28 @@
                         </a-list-item-meta>
                     </a-list-item>
                 </a-list>
+                <a-row>
+                <a-col :span="12">
                 <a href="./CreateNewUser">
                     <a-button type="dashed" block>
                         <a-icon type="plus" /> Добавить нового пользователя
                     </a-button>
                 </a>
+                </a-col>
+                <a-col :span="12">
+                <a-upload
+					name="file"
+					accept=".csv"
+					:customRequest="customRequest"
+                    :fileList="fileList"
+					@@change="handleFileUpload"
+				>
+                    <a-button type="dashed" block>
+                        <a-icon type="upload" /> Загрузить студентов из файла .csv
+                    </a-button>
+                </a-upload>
+                </a-col>
+                </a-row>
             </div>
                 `,
         });
