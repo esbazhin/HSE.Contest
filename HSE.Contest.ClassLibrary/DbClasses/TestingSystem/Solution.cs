@@ -1,4 +1,5 @@
-﻿using HSE.Contest.ClassLibrary.DbClasses.Files;
+﻿using HSE.Contest.ClassLibrary.DbClasses.Administration;
+using HSE.Contest.ClassLibrary.DbClasses.Files;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -41,6 +42,8 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
 
         [Column(name: "compilationId")]
         public int? CompilationId { get; set; }
+
+        public virtual User Student { get; set; }
 
         //[Column(name: "reflectionId")]
         //public int? ReflectionId { get; set; }

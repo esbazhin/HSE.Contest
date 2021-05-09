@@ -1,4 +1,5 @@
-﻿using HSE.Contest.Areas.TestingSystem.ViewModels;
+﻿using HSE.Contest.Areas.TestingSystem.Models;
+using HSE.Contest.Areas.TestingSystem.ViewModels;
 using HSE.Contest.ClassLibrary;
 using HSE.Contest.ClassLibrary.Communication.Requests;
 using HSE.Contest.ClassLibrary.Communication.Responses;
@@ -632,6 +633,79 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             _db.SaveChanges();
 
             return Content("ok");
+        }
+
+        public IActionResult DownloadResults(int taskId)
+        {
+            var task = _db.StudentTasks.Find(taskId);
+
+            if (task is null)
+            {
+                return NotFound();
+            }
+
+            var allResults = _db.StudentResults.Where(s => s.TaskId == taskId).ToList();
+
+            var results = new List<CsvResult>();
+            foreach(var res in allResults)
+            {
+                var curRes = new CsvResult
+                {
+                    FirstName = res.Student.FirstName,
+                    LastName = res.Student.LastName,
+                    GroupName = string.Join(",", res.Student.Groups.Select(g => g.Group.Name)),
+                    Score = res.Solution.Score.ToString(),
+                    HasPlag = res.Solution.PlagiarismDetected ? "ДА" : "НЕТ",
+                    WithPlag = "-",
+                };
+
+                if (res.Solution.PlagiarismDetected)
+                {
+                    var plagiats = _db.PlagiarismResults.Where(p => p.TaskId == taskId && (p.SolutionId1 == res.SolutionId || p.SolutionId2 == res.SolutionId)).ToList();
+
+                    var plagRes = new List<string>();
+                    foreach(var p in plagiats)
+                    {
+                        int otherId;
+                        if(p.SolutionId1 == res.SolutionId)
+                        {
+                            otherId = p.SolutionId2;
+                        }
+                        else
+                        {
+                            otherId = p.SolutionId1;
+                        }
+
+                        var otherSol = _db.Solutions.Find(otherId);
+
+                        if(otherSol is null)
+                        {
+                            continue;
+                        }
+
+                        var otherStudName = otherSol.Student.LastName + " " + otherSol.Student.FirstName;
+                        plagRes.Add(otherStudName);
+                    }
+
+                    curRes.WithPlag = string.Join(",", plagRes.OrderBy(s => s).ToList());
+                }
+
+                results.Add(curRes);
+            }
+
+            var file = new System.Text.StringBuilder();
+            file.AppendLine("Фамилия;Имя;Группа;Оценка;Наличие плагиата;С кем");
+
+            foreach(var r in results.OrderBy(r => r.LastName))
+            {
+                file.AppendLine($"{r.LastName};{r.FirstName};{r.GroupName};{r.Score};{r.HasPlag};{r.WithPlag}");
+            }
+            byte[] bom = System.Text.Encoding.UTF8.GetPreamble();
+            byte[] mas = System.Text.Encoding.UTF8.GetBytes(file.ToString());
+
+            string fileType = "application/csv";
+            string fileName = task.Name + ".csv";
+            return File(bom.Concat(mas).ToArray(), fileType, fileName);
         }
     }
 }

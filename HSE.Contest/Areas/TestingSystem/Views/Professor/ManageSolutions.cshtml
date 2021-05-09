@@ -4,6 +4,10 @@
     ViewData["Title"] = "Отправленные решения";
 }
 
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Professor", action = "AllTasks", area = "TestingSystem" })
+}
+
 @section ManageGroups{
     @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
 }
@@ -90,12 +94,17 @@
 				            title="Sure to recheck all solutions?"
 				            @@confirm="recheckAll(results.taskId)"
 			            >
-				            <a-button key="1" type="primary">
+				            <a-button key="1">
 					            Отправить на перепроверку все решения
 				            </a-button>
 			            </a-popconfirm>
+                        <a :href="'./DownloadResults?taskId=' + results.taskId">
+                            <a-button key="2" type="primary">
+					            Выгрузить ведомость
+				            </a-button>
+                        </a>
 			        </template>
-			        <a-descriptions size="small" :column="2">				        
+			        <a-descriptions size="small" :column="2">
 				        <a-descriptions-item label="Задано группе">
 					        {{results.groupName}}
 				        </a-descriptions-item>
@@ -107,20 +116,20 @@
 				        </a-descriptions-item>
                          <a-descriptions-item label="Доступен до">
 					        {{results.deadline}}
-				        </a-descriptions-item>                       
+				        </a-descriptions-item>
 			        </a-descriptions>
 			    </a-page-header>
                 <a-list itemLayout="vertical" :dataSource="results.results">
                     <a-list-item slot="renderItem" slot-scope="item, index">
-                            <a :href="'./ManageStudentSolutions?taskId=' + item.taskId + '&studentId=' + item.studentId" slot="actions">all solutions</a>   
-                            <a :href="'./EditSolution?id=' + item.solutionId" slot="actions">edit</a> 
+                            <a :href="'./ManageStudentSolutions?taskId=' + item.taskId + '&studentId=' + item.studentId" slot="actions">all solutions</a>
+                            <a :href="'./EditSolution?id=' + item.solutionId" slot="actions">edit</a>
                             <a :href="'../Student/ViewSolutionReport?id=' + item.solutionId" slot="actions">report</a>
                             <a-popconfirm slot="actions"
                                 title="Sure to recheck?"
                                 @@confirm="recheck(item.solutionId)"
                                 >
                                     <a-button type="link">recheck</a-button>
-                            </a-popconfirm>                           
+                            </a-popconfirm>
                         <a-list-item-meta>
                             <label slot="title">{{item.studentFullName}}</label>
                         </a-list-item-meta>
@@ -134,11 +143,11 @@
 						    </a-col>
 						    <a-col :span="8">
 							    <a-statistic title="Плагиат" :value="item.plagiarismDetected ? 'ДА' : 'НЕТ'" :value-style="getValueStyle(item.plagiarismDetected ? 'ДА' : 'НЕТ')"/>
-						    </a-col>						    
+						    </a-col>
 					    </a-row>
 
                     </a-list-item>
-                </a-list>               
+                </a-list>
             </div>
                 `,
         });

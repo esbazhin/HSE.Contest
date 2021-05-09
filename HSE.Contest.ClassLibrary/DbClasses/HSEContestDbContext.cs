@@ -43,6 +43,9 @@ namespace HSE.Contest.ClassLibrary.DbClasses
             modelBuilder.Entity<Solution>()
                 .HasOne(t => t.File);
 
+            modelBuilder.Entity<Solution>()
+                .HasOne(t => t.Student);                
+
             modelBuilder.Entity<CompilationResult>()
                 .HasKey(t => t.SolutionId);
 

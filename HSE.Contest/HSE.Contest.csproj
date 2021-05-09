@@ -16,7 +16,6 @@
   <ItemGroup>
     <Folder Include="Areas\Administration\Data\" />
     <Folder Include="Areas\TestingSystem\Data\" />
-    <Folder Include="Areas\TestingSystem\Models\" />
   </ItemGroup>
   
   <ItemGroup>
