@@ -26,5 +26,7 @@ namespace HSE.Contest.ClassLibrary.DbClasses.TestingSystem
 
         [Column(name: "data", TypeName = "json")]
         public string TestData { get; set; }
+
+        public virtual TaskTest Test { get; set; }
     }
 }

@@ -544,7 +544,81 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
         {
             var sol = _db.Solutions.Find(id);
 
-            return View((id, sol.Score));
+            if(sol is null)
+            {
+                return NotFound();
+            }
+
+            var testResults = _db.TestingResults.Where(r => r.SolutionId == id).Select(r => new EditTestingResultViewModel
+            {
+                TestResultId = r.Id,
+                TestCommentary = r.Commentary,
+                TestType = r.Test.TestType,
+                TestName = TestsNamesConverter.ConvertTypeToName(r.Test.TestType),
+                TestScore = r.Score,
+                ResultCode = r.ResultCode.ToString(),
+            }).ToList();
+
+            var res = new EditSolutionViewModel
+            {
+                TaskId = sol.TaskId,
+                SolutionId = id,
+                SolutionScore = sol.Score,
+                ResultCode = sol.ResultCode.ToString(),
+                TestingResults = testResults,
+            };
+
+            var allResultCodes = Enum.GetNames<ResultCode>();
+
+            return View(new EditTaskResultViewModel
+            {
+                Data = res,
+                AllResultCodes = allResultCodes
+            });
+        }
+
+        public IActionResult UpdateSolution(string json)
+        {
+            EditSolutionViewModel jsonSolution = JsonConvert.DeserializeObject<EditSolutionViewModel>(json);
+
+            var y = _db.Solutions.Find(jsonSolution.SolutionId);
+
+            if (y is null)
+            {
+                return Content("error");
+            }
+
+            y.Score = jsonSolution.SolutionScore;
+            y.ResultCode = Enum.Parse<ResultCode>(jsonSolution.ResultCode);
+            _db.Solutions.Update(y);
+
+            //проверяем результат студента, если этот лучше - обновляем
+            var studentResult = _db.StudentResults.Find(y.StudentId, y.TaskId);
+
+            var prevSol = _db.Solutions.Find(studentResult.SolutionId);
+
+            if (y.Score >= prevSol.Score)
+            {
+                studentResult.SolutionId = y.Id;
+            }
+
+            foreach (var tr in jsonSolution.TestingResults)
+            {
+                if (tr.UpdateData)
+                {
+                    var curTr = _db.TestingResults.Find(tr.TestResultId);
+                    curTr.TestData = null;
+                    curTr.Commentary = tr.TestCommentary;
+                    curTr.Score = tr.TestScore;
+                    curTr.ResultCode = Enum.Parse<ResultCode>(tr.ResultCode);
+
+                    _db.TestingResults.Update(curTr);
+                }
+            }
+
+            _db.SaveChanges();
+
+            return Content("/TestingSystem/Professor/ManageSolutions?taskId=" + y.TaskId.ToString());
         }
 
         public IActionResult UpdateSolutionMark(int id, double score)

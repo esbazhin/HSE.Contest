@@ -3,7 +3,14 @@
     ViewData["Title"] = "Отправка решения";
 }
 @section Back{
-    @Html.RouteLink("Back", new { controller = "Student", action = "SendStudentSolution", id = Model.TaskId, area = "TestingSystem" })
+    @if (Model.StudentAction)
+    {
+        @Html.RouteLink("Back", new { controller = "Student", action = "SendStudentSolution", id = Model.TaskId, area = "TestingSystem" })
+    }
+    else
+    {
+        @Html.RouteLink("Back", new { controller = "Professor", action = "ManageSolutions", taskId = Model.TaskId, area = "TestingSystem" })
+    }
 }
 
 <div id="app"></div>
@@ -104,7 +111,7 @@ new Vue({
 								</a-card>
 							</div>
 							<div v-else>
-							<a-card title="Тесты">								
+							<a-card title="Тесты">
 								<a-card :title="test.name" :key="index" v-for="(test, index) in item.data.results">
 									<a-tag slot="extra"
 										:color="test.resultString === 'OK' ? 'green' : 'volcano'"

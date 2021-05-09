@@ -100,7 +100,8 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 Result = s.ResultCode.ToString(),
                 Time = s.Time,
                 TestingResults = testResults,
-                TaskId = s.TaskId
+                TaskId = s.TaskId,
+                StudentAction = true,
             };
             //JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             //{

@@ -1,10 +1,10 @@
-﻿@model (int, double)
+﻿@model EditTaskResultViewModel
 @{
     ViewData["Title"] = "Изменить оценку";
 }
 
 @section Back{
-    @Html.RouteLink("Back", new { controller = "Professor", action = "AllTasks", area = "TestingSystem" })
+    @Html.RouteLink("Back", new { controller = "Professor", action = "ManageSolutions", taskId = Model.Data.TaskId, area = "TestingSystem" })
 }
 @section ManageGroups{
     @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
@@ -14,36 +14,119 @@
     @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
 }
 
-<h1>Изменить оценку</h1>
-
 <div id="app"></div>
 
 @section Scripts{
     <script>
-let solId = @Json.Serialize(Model.Item1);
-let mark = @Json.Serialize(Model.Item2);
+let sol = @Json.Serialize(Model.Data);
+let codes = @Json.Serialize(Model.AllResultCodes);
 
 new Vue({
 		el: '#app',
 		data: {
-            solId: solId,
-            mark: mark,
+			sol: sol,
+			codes: codes,
 		},
-        methods: {  
-            send: function () { document.location.href = './UpdateSolutionMark?id=' + this.solId + '&score=' + this.mark; }
+        methods: {
+            send: function () {
+                var http = new XMLHttpRequest();
+                var url = './UpdateSolution';
+                var data = 'json=' + encodeURIComponent(JSON.stringify(this.sol));
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                var that = this;
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.readyState == 4 && http.status == 200) {
+                        if (http.responseText != 'error') {
+                            document.location.href = http.responseText;
+                        }
+                        else {
+                            that.$message.error('An error occured. Try again!');
+                        }
+                    }
+                }
+                http.send(data);
+            },
         },
 
 		template: `
 		<div>
-		<a-input-number v-model="mark" :min="0" :max="10" :step="0.01"/>
+		<a-page-header
+			style="border: 1px solid rgb(235, 237, 240)"
+			title="Изменение оценки"
+			@@back="() => $router.go(-1)"
+		>
 
-		</a-collapse>
-		<a-popconfirm
-			title="Sure to change?"
-			@@confirm="send"
-        >
-			<a-button block type="submit">Изменить оценку</a-button>
-        </a-popconfirm>
+		<a-descriptions size="small" :column="2">
+			<a-descriptions-item label="Итоговая оценка решения">
+				<a-input-number v-model="sol.solutionScore" :min="0" :max="10" :step="0.01"/>
+			</a-descriptions-item>
+			<a-descriptions-item label="Итоговый вердикт решения">
+				<a-select v-model="sol.resultCode">
+					<a-select-option
+						v-for="(item, index) in codes"
+						:key="index"
+						:value="item">  {{item}}
+					</a-select-option>
+				</a-select>
+			</a-descriptions-item>
+		</a-descriptions>
+
+		<template slot="extra">
+			<a-popconfirm
+				title="Sure to change?"
+				@@confirm="send"
+				>
+				<a-button block type="primary">Изменить оценку</a-button>
+			</a-popconfirm>
+		</template>
+		</a-page-header>
+
+		<a-card title="Результаты тестов">
+		<div v-if="sol.testingResults == null || sol.testingResults.length == 0">
+			<a-empty
+				image="https://gw.alipayobjects.com/mdn/miniapp_social/afts/img/A*pevERLJC9v0AAAAAAAAAAABjAQAAAQ/original"
+			>
+			<span slot="description">Нет данных</span>
+
+			</a-empty>
+		</div>
+		<div v-else>
+            <a-tabs tab-position="left" :default-active-key="0">
+				<a-tab-pane v-for="(item, index) in sol.testingResults" :key="index" :tab="item.testName">
+				<a-card :title="item.testName">
+					<a-form-model>
+						<a-form-model-item label="Изменить результаты?">
+							<a-switch v-model="item.updateData" />
+						</a-form-model-item>
+						<a-form-model-item label="Оценка за тест">
+							<a-input-number v-model="item.testScore" :min="0" :max="10" :step="0.01"/>
+						</a-form-model-item>
+						<a-form-model-item label="Вердикт теста">
+							<a-select v-model="item.resultCode">
+								<a-select-option
+									v-for="(item, index) in codes"
+									:key="index"
+									:value="item">  {{item}}
+								</a-select-option>
+							</a-select>
+						</a-form-model-item>
+						<a-form-model-item label="Комментарии">
+							<a-textarea
+								placeholder="Комментарии"
+								v-model="item.testCommentary"
+								:autosize="{ minRows: 5, maxRows: 20 }"
+							/>
+						</a-form-model-item>
+				    </a-form-model>
+				</a-card>
+				</a-tab-pane>
+			</a-tabs>
+		</div>
+        </a-card>
 	</div>
 		`,
 	});

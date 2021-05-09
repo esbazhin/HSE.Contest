@@ -10,6 +10,7 @@ namespace HSE.Contest.Areas.TestingSystem.ViewModels
     public class SolutionReportViewModel : SolutionViewModel
     {
         public int TaskId { get; set; }
+        public bool StudentAction { get; set; }
         public TestingResultViewModel[] TestingResults { get; set; }
     }
 

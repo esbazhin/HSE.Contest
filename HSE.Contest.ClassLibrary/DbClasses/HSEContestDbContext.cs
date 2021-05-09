@@ -91,6 +91,9 @@ namespace HSE.Contest.ClassLibrary.DbClasses
 
             modelBuilder.Entity<PlagiarismResult>()
                 .HasKey(t => new { t.SolutionId1, t.SolutionId2 });
+
+            modelBuilder.Entity<TestingResult>()
+                .HasOne(t => t.Test);
         }
 
         public int UploadFile(string name, byte[] content)
