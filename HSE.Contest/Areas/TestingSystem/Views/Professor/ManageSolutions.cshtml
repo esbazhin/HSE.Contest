@@ -123,7 +123,7 @@
                     <a-list-item slot="renderItem" slot-scope="item, index">
                             <a :href="'./ManageStudentSolutions?taskId=' + item.taskId + '&studentId=' + item.studentId" slot="actions">all solutions</a>
                             <a :href="'./EditSolution?id=' + item.solutionId" slot="actions">edit</a>
-                            <a :href="'../Student/ViewSolutionReport?id=' + item.solutionId" slot="actions">report</a>
+                            <a :href="'../Student/ViewSolutionReport?id=' + item.solutionId+'&from=0'" slot="actions">report</a>
                             <a-popconfirm slot="actions"
                                 title="Sure to recheck?"
                                 @@confirm="recheck(item.solutionId)"

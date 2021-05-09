@@ -214,7 +214,7 @@ new Vue({
 						{{item.totalScore}}
 					</div>
 				</span>
-				<a :href="'./ViewSolutionReport?id='+item.id" slot="action" slot-scope="item"><a-button :disabled="sol.data.canSend || item.result == 'NT'" type="dashed">Отчёт</a-button></a>
+				<a :href="'./ViewSolutionReport?id='+item.id+'&from=1'" slot="action" slot-scope="item"><a-button :disabled="sol.data.canSend || item.result == 'NT'" type="dashed">Отчёт</a-button></a>
 			</a-table>
         </a-card>
 	</div>

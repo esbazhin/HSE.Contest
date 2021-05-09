@@ -75,7 +75,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
        
 
         [Authorize(Roles = "student, professor")]
-        public IActionResult ViewSolutionReport(int id)
+        public IActionResult ViewSolutionReport(int id, string from)
         {
             var s = _db.Solutions.Find(id);
 
@@ -101,7 +101,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
                 Time = s.Time,
                 TestingResults = testResults,
                 TaskId = s.TaskId,
-                StudentAction = true,
+                StudentAction = from == "1",
             };
             //JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             //{
