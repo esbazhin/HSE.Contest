@@ -20,7 +20,16 @@
 
     <script>
 let plag = @Json.Serialize(Model);
-let addPlag = {"solutionId1": @Json.Serialize(Model.AddPlag[0].SolutionId), "solutionId2": @Json.Serialize(Model.AddPlag[1].SolutionId), "taskId": @Json.Serialize(Model.TaskData.TaskId), "linesMatched": 0, "percent1": 0.1, "percent2": 0.1}
+
+@if(Model.AddPlag.Count > 1)
+{
+    @:let addPlag = { "solutionId1": @Json.Serialize(Model.AddPlag[0].SolutionId), "solutionId2": @Json.Serialize(Model.AddPlag[1].SolutionId), "taskId": @Json.Serialize(Model.TaskData.TaskId), "linesMatched": 0, "percent1": 0.1, "percent2": 0.1 }
+}
+else
+{
+    @:let addPlag = { "solutionId1": 0, "solutionId2": 1, "taskId": @Json.Serialize(Model.TaskData.TaskId), "linesMatched": 0, "percent1": 0.1, "percent2": 0.1 }
+}
+
 new Vue({
 		el: '#app',
 		data: {
@@ -161,7 +170,7 @@ new Vue({
             <a-form-model-item label="Кол-во совпавших строк">
 			    <a-input-number v-model="addPlag.linesMatched" :min="0" :max="999999"/>
 			</a-form-model-item>
-            
+
         </a-form-model>
 
         <div

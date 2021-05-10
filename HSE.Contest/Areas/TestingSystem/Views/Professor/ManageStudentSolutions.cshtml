@@ -45,6 +45,7 @@ new Vue({
             { title: 'Оценка', width: 100, key: 'totalScore', scopedSlots: { customRender: 'totalScore' } },
 			{ title: 'Вердикт', width: 100, key: 'result', scopedSlots: { customRender: 'results' }},
 			{ title: 'Отчёт', key: 'report', width: 100, scopedSlots: { customRender: 'report' } },
+            { title: 'Выгрузить решение', key: 'download', width: 100, scopedSlots: { customRender: 'download' } },
 			{ title: 'Изменить оценку', key: 'edit', width: 100, scopedSlots: { customRender: 'edit' } },
             { title: 'Отправить на перепроверку', key: 'recheck', width: 100, scopedSlots: { customRender: 'recheck' } },
 		]
@@ -141,6 +142,7 @@ new Vue({
 					</div>
 				</span>
 				<a :href="'../Student/ViewSolutionReport?id='+item.id+'&from=0'" slot="report" slot-scope="item"><a-button type="dashed">Отчёт</a-button></a>
+				<a :href="'./DownloadSolution?solutionId=' + item.id" slot="download" slot-scope="item"><a-button type="dashed">Выгрузить решение</a-button></a>
 				<a :href="'./EditSolution?id='+item.id" slot="edit" slot-scope="item"><a-button type="dashed">Изменить оценку</a-button></a>
 				<a-popconfirm slot="recheck" slot-scope="item"
                                 title="Sure to recheck?"

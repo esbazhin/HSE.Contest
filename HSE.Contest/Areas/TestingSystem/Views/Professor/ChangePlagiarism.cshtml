@@ -83,13 +83,13 @@ new Vue({
 		<a-spin :spinning="isLoading.isLoading">
 		<a-collapse :bordered="true" :activeKey="[1,2]">
 		<a-collapse-panel header="Результаты плагиата:" key="1">
+            <a :href="'./PlagiarismResults?taskId='+plag.taskId">
+                <a-button type="primary">Результаты </a-button>
+            </a>
 			<div v-if="plag.link === null">
                 Нет результатов
             </div>
-            <div v-else>
-                <a :href="'./PlagiarismResults?taskId='+plag.taskId">
-                    <a-button type="primary">Результаты </a-button>
-                </a>
+            <div v-else>               
                 <a :href="plag.link"> Результаты на сайте MOSS</a>
             </div>
 		</a-collapse-panel>

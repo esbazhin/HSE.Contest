@@ -869,5 +869,18 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             string fileName = task.Name + ".csv";
             return File(bom.Concat(mas).ToArray(), fileType, fileName);
         }
+
+        public IActionResult DownloadSolution(int solutionId)
+        {
+            var sol = _db.Solutions.Find(solutionId);
+
+            if (sol is null)
+            {
+                return NotFound();
+            }      
+            
+            string fileType = "application/zip";
+            return File(sol.File.Content, fileType, sol.File.Name);
+        }
     }
 }
