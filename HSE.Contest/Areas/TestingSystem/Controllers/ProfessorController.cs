@@ -483,6 +483,99 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             return Content("/TestingSystem/Professor/ChangePlagiarism?taskId=" + plagJson.TaskId);
         }
 
+        public IActionResult PlagiarismResults (int taskId)
+        {
+            var task = _db.StudentTasks.Find(taskId);
+
+            if(task is null)
+            {
+                NotFound();
+            }
+
+            var plagRes = _db.PlagiarismResults.Where(r => r.TaskId == taskId).ToList();            
+
+            var results = new List<PlagiarismResultViewModel>();
+
+            foreach(var res in plagRes)
+            {
+                var curRes = new PlagiarismResultViewModel
+                {
+                    SolutionId1 = res.SolutionId1,
+                    SolutionId2 = res.SolutionId2,
+                    Percent1 = res.Percent1,
+                    Percent2 = res.Percent2,
+                    LinesMatched = res.LinesMatched,
+                    TaskId = taskId,
+                };
+
+                var sol1 = _db.Solutions.Find(res.SolutionId1);
+                curRes.StudentName1 = sol1.Student.LastName + " " + sol1.Student.FirstName;
+
+                var sol2 = _db.Solutions.Find(res.SolutionId2);
+                curRes.StudentName2 = sol2.Student.LastName + " " + sol2.Student.FirstName;
+
+                results.Add(curRes);
+            }
+
+            var sols = _db.StudentResults.Where(s => s.TaskId == taskId).Select(s => new AddPlagResultViewModel
+            {
+                StudentName = s.Student.LastName + " " + s.Student.FirstName,
+                SolutionId = s.SolutionId
+            }).ToList();
+
+            return View(new PlagiarismResultsViewModel
+            {
+                Results = results,
+                TaskData = new ExtendedTaskViewModel(task),
+                AddPlag = sols,
+            });
+        }
+
+        [HttpPost]
+        public IActionResult DeletePlagiarismResult(int solId1, int solId2, int taskId)
+        {
+            var plagRes = _db.PlagiarismResults.FirstOrDefault(r => r.SolutionId1 == solId1 && r.SolutionId2 == solId2 && r.TaskId == taskId);
+            _db.PlagiarismResults.Remove(plagRes);
+
+            _db.SaveChanges();
+
+            var solPlagRes1 = _db.PlagiarismResults.Where(r => r.SolutionId1 == solId1 || r.SolutionId2 == solId1).ToList();
+            if(solPlagRes1.Count == 0)
+            {
+                var sol = _db.Solutions.Find(solId1);
+                sol.PlagiarismDetected = false;
+            }
+
+            var solPlagRes2 = _db.PlagiarismResults.Where(r => r.SolutionId1 == solId2 || r.SolutionId2 == solId2).ToList();
+            if (solPlagRes2.Count == 0)
+            {
+                var sol = _db.Solutions.Find(solId2);
+                sol.PlagiarismDetected = false;
+            }
+
+            _db.SaveChanges();
+
+            return Content("./PlagiarismResults?taskId=" + taskId.ToString());
+        }
+
+        [HttpPost]
+        public IActionResult AddPlagiarismResult(string json)
+        {
+            var plagJson = JsonConvert.DeserializeObject<PlagiarismResult>(json);
+
+            var sol1 = _db.Solutions.Find(plagJson.SolutionId1);
+            sol1.PlagiarismDetected = true;
+
+            var sol2 = _db.Solutions.Find(plagJson.SolutionId2);
+            sol2.PlagiarismDetected = true;
+
+            _db.PlagiarismResults.Add(plagJson);
+
+            _db.SaveChanges();
+
+            return Content("./PlagiarismResults?taskId=" + plagJson.TaskId.ToString());
+        }
+
         public async Task<IActionResult> ReCheckPlagiarism(int taskId)
         {
             try
@@ -517,12 +610,7 @@ namespace HSE.Contest.Areas.TestingSystem.Controllers
             var res = new StudentsResultsViewModel
             {               
                 Results = allResultsViews,
-                TaskName = task.Name,
-                Type = task.IsContest ? "Контест" : "Контрольная работа",
-                GroupName = task.Group.Name,
-                NumberOfAttempts = task.NumberOfAttempts,
-                Deadline = task.To.ToString(),
-                TaskId = task.Id,
+                TaskData = new ExtendedTaskViewModel(task),
             };
 
             return View(res);

@@ -1,0 +1,192 @@
+﻿@model PlagiarismResultsViewModel
+@{
+    ViewData["Title"] = "Результаты плагиата";
+}
+
+@section Back{
+    @Html.RouteLink("Back", new { controller = "Professor", action = "ChangePlagiarism", taskId = Model.TaskData.TaskId, area = "TestingSystem" })
+}
+@section ManageGroups{
+    @Html.RouteLink("Manage Groups", new { controller = "Groups", action = "Index", area = "Administration" })
+}
+
+@section ManageCodeStyle{
+    @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
+}
+
+<div id="app"></div>
+
+@section Scripts{
+
+    <script>
+let plag = @Json.Serialize(Model);
+let addPlag = {"solutionId1": @Json.Serialize(Model.AddPlag[0].SolutionId), "solutionId2": @Json.Serialize(Model.AddPlag[1].SolutionId), "taskId": @Json.Serialize(Model.TaskData.TaskId), "linesMatched": 0, "percent1": 0.1, "percent2": 0.1}
+new Vue({
+		el: '#app',
+		data: {
+            plag: plag,
+            visible: false,
+            addPlag: addPlag,
+            columns: [
+                { title: 'Студент 1', dataIndex: 'studentName1', key: 'studentName1' },
+                { title: 'Студент 2', dataIndex: 'studentName2', key: 'studentName2' },
+                { title: 'Кол-во совпавших строк', dataIndex: 'linesMatched', key: 'linesMatched' },
+                { title: 'Процент заимствований студента 1', dataIndex: 'percent1', key: 'percent1' },
+                { title: 'Процент заимствований студента 2', dataIndex: 'percent2', key: 'percent2' },
+                { title: 'Удалить', key: 'del', scopedSlots: { customRender: 'del' } },
+            ]
+		},
+		methods:{
+            sendToDelete(res) {
+                var http = new XMLHttpRequest();
+                var url = './DeletePlagiarismResult';
+
+                var data = 'solId1=' + encodeURIComponent(res.solutionId1) + '&solId2=' + encodeURIComponent(res.solutionId2) + '&taskId=' + encodeURIComponent(res.taskId);
+
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                var that = this;
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.readyState == 4 && http.status == 200) {
+                        if (http.responseText != 'error') {
+                            document.location.href = http.responseText;
+                        }
+                        else {
+                            that.$message.error('An error occured. Try again!');
+                        }
+                    }
+                }
+                http.send(data);
+            },
+            sendAddPlag() {
+                var http = new XMLHttpRequest();
+                var url = './AddPlagiarismResult';
+
+                var data = 'json=' + encodeURIComponent(JSON.stringify(addPlag));
+
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                var that = this;
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.readyState == 4 && http.status == 200) {
+                        if (http.responseText != 'error') {
+                            document.location.href = http.responseText;
+                        }
+                        else {
+                            that.$message.error('An error occured. Try again!');
+                        }
+                    }
+                }
+                http.send(data);
+            }
+		},
+
+		template: `
+		<div>
+		<a-page-header
+		    style="border: 1px solid rgb(235, 237, 240)"
+		    :title="'Результаты по задаче ' + plag.taskData.taskName"
+		    @@back="() => $router.go(-1)"
+		    >
+		    <a-descriptions size="small" :column="2">
+			    <a-descriptions-item label="Задано группе">
+				    {{plag.taskData.groupName}}
+			    </a-descriptions-item>
+                <a-descriptions-item label="Тип задачи">
+				    {{plag.taskData.type}}
+			    </a-descriptions-item>
+                <a-descriptions-item label="Кол-во попыток">
+				    {{plag.taskData.numberOfAttempts}}
+			    </a-descriptions-item>
+                    <a-descriptions-item label="Доступен до">
+				    {{plag.taskData.deadline}}
+			    </a-descriptions-item>
+		    </a-descriptions>
+
+            <template slot="extra">
+                <a-button type="primary" @@click="visible=true"> Добавить отметку о плагиате</a-button>
+			</template>
+
+	    </a-page-header>
+
+        <a-table :columns="columns" :data-source="plag.results">
+            <a-popconfirm slot="del" slot-scope="item"
+                                title="Sure to delete?"
+                                @@confirm="sendToDelete(item)"
+                                >
+					<a-button type="dashed">Удалить</a-button>
+		    </a-popconfirm>
+		</a-table>
+
+        <a-drawer
+            title="Добавить отметку о плагиате"
+            :width="720"
+            :visible="visible"
+            :body-style="{ paddingBottom: '80px' }"
+            @@close="visible=false"
+        >
+
+        <a-form-model>
+            <a-form-model-item label="Cтудент 1">
+                <a-select v-model="addPlag.solutionId1">
+			        <a-select-option
+				        v-for="(item, index) in plag.addPlag"
+				        :key="index"
+				        :value="item.solutionId">  {{item.studentName}}
+			        </a-select-option>
+		        </a-select>
+            </a-form-model-item>
+            <a-form-model-item label="Процент заимствований студента 1">
+			    <a-input-number v-model="addPlag.percent1" :min="0" :max="1" :step="0.01"/>
+			</a-form-model-item>
+            <a-form-model-item label="Cтудент 2">
+                <a-select v-model="addPlag.solutionId2">
+			        <a-select-option
+				        v-for="(item, index) in plag.addPlag"
+				        :key="index"
+				        :value="item.solutionId">  {{item.studentName}}
+			        </a-select-option>
+		        </a-select>
+            </a-form-model-item>
+            <a-form-model-item label="Процент заимствований студента 2">
+			    <a-input-number v-model="addPlag.percent2" :min="0" :max="1" :step="0.01"/>
+			</a-form-model-item>
+
+            <a-form-model-item label="Кол-во совпавших строк">
+			    <a-input-number v-model="addPlag.linesMatched" :min="0" :max="999999"/>
+			</a-form-model-item>
+            
+        </a-form-model>
+
+        <div
+            :style="{
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            borderTop: '1px solid #e9e9e9',
+            padding: '10px 16px',
+            background: '#fff',
+            textAlign: 'right',
+            zIndex: 1,
+            }"
+        >
+            <a-button :style="{ marginRight: '8px' }" @@click="visible=false">
+                Cancel
+            </a-button>
+            <a-button type="primary" @@click="sendAddPlag">
+                Submit
+            </a-button>
+        </div>
+        </a-drawer>
+	</div>
+		`,
+	});
+    </script>
+}

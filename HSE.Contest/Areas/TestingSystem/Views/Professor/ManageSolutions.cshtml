@@ -86,19 +86,19 @@
                 <div>
                 <a-page-header
 			        style="border: 1px solid rgb(235, 237, 240)"
-			        :title="'Результаты по задаче ' + results.taskName"
+			        :title="'Результаты по задаче ' + results.taskData.taskName"
 			        @@back="() => $router.go(-1)"
 			        >
 			        <template slot="extra">
 			            <a-popconfirm
 				            title="Sure to recheck all solutions?"
-				            @@confirm="recheckAll(results.taskId)"
+				            @@confirm="recheckAll(results.taskData.taskId)"
 			            >
 				            <a-button key="1">
 					            Отправить на перепроверку все решения
 				            </a-button>
 			            </a-popconfirm>
-                        <a :href="'./DownloadResults?taskId=' + results.taskId">
+                        <a :href="'./DownloadResults?taskId=' + results.taskData.taskId">
                             <a-button key="2" type="primary">
 					            Выгрузить ведомость
 				            </a-button>
@@ -106,16 +106,16 @@
 			        </template>
 			        <a-descriptions size="small" :column="2">
 				        <a-descriptions-item label="Задано группе">
-					        {{results.groupName}}
+					        {{results.taskData.groupName}}
 				        </a-descriptions-item>
                         <a-descriptions-item label="Тип задачи">
-					        {{results.type}}
+					        {{results.taskData.type}}
 				        </a-descriptions-item>
                         <a-descriptions-item label="Кол-во попыток">
-					        {{results.numberOfAttempts}}
+					        {{results.taskData.numberOfAttempts}}
 				        </a-descriptions-item>
                          <a-descriptions-item label="Доступен до">
-					        {{results.deadline}}
+					        {{results.taskData.deadline}}
 				        </a-descriptions-item>
 			        </a-descriptions>
 			    </a-page-header>

@@ -13,7 +13,7 @@
 @section ManageCodeStyle{
     @Html.RouteLink("Manage CodeStyle", new { controller = "CodeStyleRules", action = "Index", area = "Administration" })
 }
-<h1>Результаты плагиата</h1>
+<h1>Плагиат</h1>
 
 <div id="app"></div>
 
@@ -87,7 +87,10 @@ new Vue({
                 Нет результатов
             </div>
             <div v-else>
-                <a :href="plag.link"> Результаты </a>
+                <a :href="'./PlagiarismResults?taskId='+plag.taskId">
+                    <a-button type="primary">Результаты </a-button>
+                </a>
+                <a :href="plag.link"> Результаты на сайте MOSS</a>
             </div>
 		</a-collapse-panel>
 		<a-collapse-panel header="Настройки плагиата:" key="2">
