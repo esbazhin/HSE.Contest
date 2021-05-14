@@ -137,13 +137,20 @@ namespace TestingSystemService
                                 return WriteToDb(solution, ResultCode.IE, 0, "bad response from compilation container: " + response.StatusCode, false);
                             }
                         }
+                        else
+                        {
+                            return WriteToDb(solution, ResultCode.IE, 0, "Compiler Service Is Dead!", false);
+                        }
                     }
                     else
                     {
-                        return WriteToDb(solution, ResultCode.IE, 0, "Compiler Service Is Dead!", false);
+                        return WriteToDb(null, ResultCode.IE, 0, "Can't find task tests!", false);
                     }
                 }
-                return WriteToDb(null, ResultCode.IE, 0, "Can't find solution!", false);
+                else
+                {
+                    return WriteToDb(null, ResultCode.IE, 0, "Can't find solution!", false);
+                }
             }
             catch
             {
