@@ -1,0 +1,70 @@
+{
+  "MossId" : 723153229,
+  "DatabaseInfo": {
+    "Host": "localhost",
+    "Port": 5432,
+    "DatabaseName": "HSEContest",
+    "Username": "NetCoreServer",
+    "Password": "qwerty12345"
+  },
+  "MessageQueueInfo": {
+    "Host": "localhost",
+    "Port": 5672,
+    "Username": "admin",
+    "Password": "password",
+	"TestingQueueName": "testingQueue",
+	"PlagiarismQueueName": "plagiarismQueue"
+  },
+  "FrontEnd": {
+    "Host": "localhost",
+    "Port": 8888,
+    "InDocker": true
+  },
+  "TestingSystemWorker": {
+    "Host": "localhost",
+    "Port": 1337,
+    "InDocker": true
+  },
+  "CompilerServicesOrchestrator": {
+    "Host": "compilerservicesorchestrator",
+    "Port": 80,
+	"TestActionLink": "/CompilerServicesOrchestration/CompileProject",
+	"TaskActionLink": "/CompilerServicesOrchestration/CompileTaskProject",
+    "InDocker": true
+  },
+  "Tests" :{"functionalTest": {
+    "Host": "functionaltestingservicesorchestrator",
+    "Port": 80,
+    "TestActionLink": "/FunctionalTestingOrchestrator/TestProject",
+    "InDocker": true
+  },
+  "codeStyleTest": {
+    "Host": "codestyletesterservice",
+    "Port": 80,
+	"TestActionLink": "/CodeStyleTester/TestProject",
+    "InDocker": true
+  },
+  "reflectionTest": {
+    "Host": "reflectiontesterservice",
+    "Port": 80,
+	"TestActionLink": "/ReflectionTester/TestProject",
+    "InDocker": true
+  }
+  },
+  "CompilerImages":{ "netCore":{
+    "Name": "netcorecompiler:rel",
+	"TestActionLink": "/Compiler/CompileProject",
+	"TaskActionLink": "/Compiler/CompileTaskProject"},
+	"netFramework":{
+    "Name": "netfrcompiler:rel",
+	"TestActionLink": "/Compiler/CompileProject",
+	"TaskActionLink": "/Compiler/CompileTaskProject"}
+  },
+  "FunctionalTesterImages":{"netCore":{
+    "Name": "netcoreftest:rel",
+	"TestActionLink": "/FunctionalTester/TestProject"},
+	"netFramework":{
+    "Name": "netfrftest:rel",
+	"TestActionLink": "/FunctionalTester/TestProject"}
+  }
+}
